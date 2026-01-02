@@ -1,0 +1,39 @@
+Yazılım Doğrulama ve Geçerleme (YDG) — Proje ve Sınav Duyurusu
+Bu dönem YDG dersi kapsamında her öğrenci bireysel olarak kapsamlı bir proje geliştirecektir. Proje basit olmayacak; 2–3 tablodan ibaret küçük bir yapı yerine daha geniş kapsamlı bir iş bekleniyor.
+Hazırlanacak projede test işlemleri CI/CD süreçleri ile yürütülecek. CI/CD aracı olarak Jenkins kullanılacak. Kod üzerinde bir değişiklik yapıldığında ve repoya push yapıldığı andan itibaren aşağıdaki aşamaların gerçekleşmesi beklenecek:
+1- Github'dan kodlar çekilecek (5 puan)
+2- Kodlar build edilecek (5 puan)
+3- Birim Testleri çalıştırılacak ve durumları rapor edilecek (15 puan)
+4- Entegrasyon testleri çalıştırılacak ve durumları rapor edilecek. (15 puan)
+5- Sistem docker container'lar üzerinde çalıştırılacak (5 puan)
+6- Çalışır durumdaki sistem üzerinden en az 3 test senaryosu çalıştırılacak ve durumları rapor edilecek. (55 puan)
+
+Altıncı aşamada en az üç test senaryosu uygulanacak. Daha fazlası yapılırsa en fazla 10 adet olacak şekilde her bir ek senaryo için 2'şer puan eklencek. Bu test senaryoları için jenkinste ayrı stage'ler yazılabilir. Her stage'de hazırlanmış olan bir selenium paketi çalıştırılacak. Bu paketi java veya python kullanarak yazabilirsiniz.
+
+
+
+Örnek use case : Araç kiralama sistemi
+
+Kullanıcı işlemi. -> use case
+
+Abonelik işlemi ->
+
+Ücret ödeme
+
+Oturum açma
+
+Ön koşul: Abonelik işleminin tamamlanması
+
+Adımlar :
+
+Kullanıcı mobil uygulamaya giriş
+yapar
+
+Park başlat ekranını açar
+
+Uygun park alanı seçer
+
+Plaka listesinden plakayı seçer ve başlat
+butonuna basar
+
+

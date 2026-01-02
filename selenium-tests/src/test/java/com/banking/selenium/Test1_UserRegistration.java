@@ -1,0 +1,44 @@
+package com.banking.selenium;
+
+import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Test Senaryosu 1: Kullanıcı Kaydı
+ * Use Case: Kullanıcı kayıt işlemi
+ */
+public class Test1_UserRegistration extends BaseSeleniumTest {
+
+    @Test
+    public void testUserRegistration() {
+        driver.get(FRONTEND_URL);
+
+        // Kayıt sekmesine geç
+        WebElement registerTab = wait.until(ExpectedConditions.elementToBeClickable(
+            By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
+        registerTab.click();
+
+        // Form alanlarını doldur
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("regUsername")));
+        driver.findElement(By.id("regUsername")).sendKeys("selenium_user_" + System.currentTimeMillis());
+        driver.findElement(By.id("regPassword")).sendKeys("password123");
+        driver.findElement(By.id("regEmail")).sendKeys("selenium" + System.currentTimeMillis() + "@test.com");
+        driver.findElement(By.id("regFirstName")).sendKeys("Selenium");
+        driver.findElement(By.id("regLastName")).sendKeys("Test");
+        driver.findElement(By.id("regPhone")).sendKeys("5551234567");
+
+        // Kayıt butonuna tıkla
+        WebElement registerButton = driver.findElement(By.xpath("//form[@id='registerForm']//button[@type='submit']"));
+        registerButton.click();
+
+        // Başarı mesajını kontrol et
+        WebElement message = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("registerMessage")));
+        assertTrue(message.getText().contains("başarılı") || message.getText().contains("success"),
+            "Kayıt işlemi başarısız oldu");
+    }
+}
+
