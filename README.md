@@ -226,9 +226,7 @@ Ana bağımlılıklar:
 - Selenium testleri için ChromeDriver'ın yüklü olduğundan emin olun
 - Frontend dosyalarının doğru konumda olduğunu kontrol edin
 
-## 👥 Geliştirici
 
-Bu proje Yazılım Doğrulama ve Geçerleme dersi final ödevi kapsamında geliştirilmiştir.
 
 ## 📄 Lisans
 
