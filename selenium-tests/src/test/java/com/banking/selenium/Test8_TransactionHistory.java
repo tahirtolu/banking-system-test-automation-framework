@@ -10,7 +10,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Senaryosu 8: İşlem Geçmişi Görüntüleme
- * Use Case: İşlem geçmişi görüntüleme işlemi
+ * 
+ * Test Durumu Kimliği: REQ-008
+ * 
+ * İlgili Gereksinimler:
+ * - Kullanıcı hesabının işlem geçmişini görüntüleyebilmelidir
+ * - İşlemler tarih sırasına göre listelenmelidir
+ * 
+ * Ön Koşullar:
+ * - Kullanıcı giriş yapmış olmalıdır (REQ-002)
+ * - En az bir hesap mevcut olmalıdır (REQ-003)
+ * - Hesapta en az bir işlem yapılmış olmalıdır
+ * 
+ * Adım Adım Uygulanacak İşlemler:
+ * 1. Dashboard ekranında "İşlem Geçmişi" bölümüne gidilir
+ * 2. Hesap seçilir ve "Geçmişi Yükle" butonuna tıklanır
+ * 
+ * Beklenen Sonuç:
+ * - Seçilen hesabın tüm işlemleri listelenmelidir
+ * - İşlemler en yeni tarihten en eski tarihe doğru sıralanmalıdır
+ * 
+ * Son Koşullar:
+ * - İşlem geçmişi doğru şekilde görüntülenmiş olmalıdır
  */
 public class Test8_TransactionHistory extends BaseSeleniumTest {
 

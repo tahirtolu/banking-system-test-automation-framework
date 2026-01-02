@@ -10,8 +10,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Senaryosu 3: Hesap Oluşturma
- * Use Case: Hesap açma işlemi
- * Ön koşul: Oturum açma işleminin tamamlanması
+ * 
+ * Test Durumu Kimliği: REQ-003
+ * 
+ * İlgili Gereksinimler:
+ * - Oturum açmış kullanıcı hesap oluşturabilmelidir
+ * - Vadesiz (CHECKING) veya Vadeli (SAVINGS) hesap tipi seçilebilmelidir
+ * - Her hesaba benzersiz hesap numarası atanmalıdır
+ * 
+ * Ön Koşullar:
+ * - Kullanıcı giriş yapmış olmalıdır (REQ-002)
+ * - Dashboard ekranı görüntüleniyor olmalıdır
+ * 
+ * Adım Adım Uygulanacak İşlemler:
+ * 1. Dashboard ekranında "Hesap İşlemleri" bölümüne gidilir
+ * 2. Hesap tipi seçilir
+ * 3. "Hesap Oluştur" butonuna tıklanır
+ * 
+ * Beklenen Sonuç:
+ * - Hesap başarıyla oluşturulmalıdır
+ * - Hesap numarası görüntülenmelidir
+ * 
+ * Son Koşullar:
+ * - Yeni hesap veritabanında kayıtlı olmalıdır
+ * - Hesap numarası benzersiz olmalıdır
  */
 public class Test3_AccountCreation extends BaseSeleniumTest {
 

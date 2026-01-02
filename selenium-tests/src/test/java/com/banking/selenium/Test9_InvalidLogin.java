@@ -9,7 +9,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Senaryosu 9: Geçersiz Giriş Denemesi
- * Use Case: Hatalı kullanıcı adı/şifre ile giriş denemesi
+ * 
+ * Test Durumu Kimliği: REQ-009
+ * 
+ * İlgili Gereksinimler:
+ * - Geçersiz kullanıcı adı veya şifre ile giriş yapılmamalıdır
+ * - Hata mesajı görüntülenmelidir
+ * - Dashboard ekranı görüntülenmemelidir
+ * 
+ * Ön Koşullar:
+ * - Sistem çalışır durumda olmalıdır
+ * - Frontend uygulaması erişilebilir olmalıdır
+ * 
+ * Adım Adım Uygulanacak İşlemler:
+ * 1. Frontend uygulamasına gidilir
+ * 2. Geçersiz kullanıcı adı ve şifre girilir
+ * 3. "Giriş Yap" butonuna tıklanır
+ * 
+ * Beklenen Sonuç:
+ * - Giriş işlemi başarısız olmalıdır
+ * - Hata mesajı görüntülenmelidir
+ * - Dashboard ekranı görüntülenmemelidir
+ * 
+ * Son Koşullar:
+ * - Kullanıcı oturum açmamış durumda olmalıdır
+ * - Sistem güvenliği korunmuş olmalıdır
  */
 public class Test9_InvalidLogin extends BaseSeleniumTest {
 

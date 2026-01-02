@@ -9,8 +9,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Senaryosu 2: Kullanıcı Girişi
- * Use Case: Oturum açma işlemi
- * Ön koşul: Kullanıcı kaydının tamamlanması
+ * 
+ * Test Durumu Kimliği: REQ-002
+ * 
+ * İlgili Gereksinimler:
+ * - Kayıtlı kullanıcı sisteme giriş yapabilmelidir
+ * - Kullanıcı adı ve şifre ile kimlik doğrulama yapılmalıdır
+ * - Başarılı giriş sonrası JWT token döndürülmelidir
+ * 
+ * Ön Koşullar:
+ * - Sistem çalışır durumda olmalıdır
+ * - Kullanıcı kaydı tamamlanmış olmalıdır (REQ-001)
+ * - Kullanıcı bilgileri veritabanında mevcut olmalıdır
+ * 
+ * Adım Adım Uygulanacak İşlemler:
+ * 1. Frontend uygulamasına gidilir
+ * 2. Kullanıcı adı ve şifre girilir
+ * 3. "Giriş Yap" butonuna tıklanır
+ * 
+ * Beklenen Sonuç:
+ * - Giriş işlemi başarılı olmalıdır
+ * - Dashboard ekranı görüntülenmelidir
+ * 
+ * Son Koşullar:
+ * - Kullanıcı oturum açmış durumda olmalıdır
+ * - JWT token saklanmış olmalıdır
  */
 public class Test2_UserLogin extends BaseSeleniumTest {
 

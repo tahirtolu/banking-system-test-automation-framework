@@ -40,3 +40,8 @@ screenshots/
 .env
 .env.local
 
+# Tüm .md dosyalarını gizle...
+*.md
+# ...ama README.md dosyasını gönder (istisna)
+!README.md
+

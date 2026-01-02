@@ -9,7 +9,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Senaryosu 10: Çıkış Yapma
- * Use Case: Oturum kapatma işlemi
+ * 
+ * Test Durumu Kimliği: REQ-010
+ * 
+ * İlgili Gereksinimler:
+ * - Kullanıcı sistemden çıkış yapabilmelidir
+ * - Çıkış sonrası oturum kapatılmalıdır
+ * - Kullanıcı giriş ekranına yönlendirilmelidir
+ * 
+ * Ön Koşullar:
+ * - Kullanıcı giriş yapmış olmalıdır (REQ-002)
+ * - Dashboard ekranı görüntüleniyor olmalıdır
+ * 
+ * Adım Adım Uygulanacak İşlemler:
+ * 1. Dashboard ekranında "Çıkış Yap" butonuna tıklanır
+ * 
+ * Beklenen Sonuç:
+ * - Çıkış işlemi başarılı olmalıdır
+ * - Kullanıcı giriş ekranına yönlendirilmelidir
+ * 
+ * Son Koşullar:
+ * - Kullanıcı oturum kapatılmış durumda olmalıdır
+ * - JWT token geçersiz hale gelmelidir
  */
 public class Test10_Logout extends BaseSeleniumTest {
 

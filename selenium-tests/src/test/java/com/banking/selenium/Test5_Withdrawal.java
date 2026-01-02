@@ -10,8 +10,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Senaryosu 5: Para Çekme
- * Use Case: Para çekme işlemi
- * Ön koşul: Hesapta yeterli bakiye olması
+ * 
+ * Test Durumu Kimliği: REQ-005
+ * 
+ * İlgili Gereksinimler:
+ * - Kullanıcı hesabından para çekebilmelidir
+ * - Çekilen tutar hesap bakiyesinden düşülmelidir
+ * - Yetersiz bakiye durumunda işlem reddedilmelidir
+ * 
+ * Ön Koşullar:
+ * - Kullanıcı giriş yapmış olmalıdır (REQ-002)
+ * - En az bir hesap mevcut olmalıdır (REQ-003)
+ * - Hesapta yeterli bakiye olmalıdır
+ * 
+ * Adım Adım Uygulanacak İşlemler:
+ * 1. Dashboard ekranında "İşlemler" bölümüne gidilir
+ * 2. "Para Çek" sekmesine tıklanır
+ * 3. Hesap seçilir ve tutar girilir
+ * 4. "Para Çek" butonuna tıklanır
+ * 
+ * Beklenen Sonuç:
+ * - Para çekme işlemi başarılı olmalıdır
+ * - Hesap bakiyesi güncellenmiş olmalıdır
+ * 
+ * Son Koşullar:
+ * - Hesap bakiyesi azalmış olmalıdır
+ * - İşlem kaydı oluşturulmuş olmalıdır
  */
 public class Test5_Withdrawal extends BaseSeleniumTest {
 

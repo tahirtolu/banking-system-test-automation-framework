@@ -10,8 +10,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Senaryosu 4: Para Yatırma
- * Use Case: Para yatırma işlemi
- * Ön koşul: Hesap açma işleminin tamamlanması
+ * 
+ * Test Durumu Kimliği: REQ-004
+ * 
+ * İlgili Gereksinimler:
+ * - Kullanıcı hesabına para yatırabilmelidir
+ * - Yatırılan tutar hesap bakiyesine eklenmelidir
+ * - İşlem kaydı oluşturulmalıdır
+ * 
+ * Ön Koşullar:
+ * - Kullanıcı giriş yapmış olmalıdır (REQ-002)
+ * - En az bir hesap mevcut olmalıdır (REQ-003)
+ * 
+ * Adım Adım Uygulanacak İşlemler:
+ * 1. Dashboard ekranında "İşlemler" bölümüne gidilir
+ * 2. "Para Yatır" sekmesine tıklanır
+ * 3. Hesap seçilir ve tutar girilir
+ * 4. "Para Yatır" butonuna tıklanır
+ * 
+ * Beklenen Sonuç:
+ * - Para yatırma işlemi başarılı olmalıdır
+ * - Hesap bakiyesi güncellenmiş olmalıdır
+ * 
+ * Son Koşullar:
+ * - Hesap bakiyesi artmış olmalıdır
+ * - İşlem kaydı oluşturulmuş olmalıdır
  */
 public class Test4_Deposit extends BaseSeleniumTest {
 

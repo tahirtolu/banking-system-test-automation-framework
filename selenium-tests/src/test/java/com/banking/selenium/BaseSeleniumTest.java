@@ -14,7 +14,11 @@ public class BaseSeleniumTest {
     protected WebDriver driver;
     protected WebDriverWait wait;
     protected static final String BASE_URL = "http://localhost:8080";
-    protected static final String FRONTEND_URL = "file:///" + System.getProperty("user.dir").replace("\\", "/") + "/frontend/index.html";
+    // Frontend URL - proje root'undan frontend klasörüne giden yol
+    protected static final String FRONTEND_URL = "file:///" + 
+        System.getProperty("user.dir")
+            .replace("\\selenium-tests", "")
+            .replace("\\", "/") + "/frontend/index.html";
 
     @BeforeEach
     public void setUp() {

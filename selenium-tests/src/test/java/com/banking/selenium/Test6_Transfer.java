@@ -10,8 +10,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Senaryosu 6: Para Transferi
- * Use Case: Para transferi işlemi
- * Ön koşul: İki hesabın olması ve gönderen hesapta yeterli bakiye
+ * 
+ * Test Durumu Kimliği: REQ-006
+ * 
+ * İlgili Gereksinimler:
+ * - Kullanıcı bir hesaptan diğerine para transferi yapabilmelidir
+ * - Transfer işlemi iki hesabın bakiyesini güncellemelidir
+ * - Yetersiz bakiye durumunda işlem reddedilmelidir
+ * 
+ * Ön Koşullar:
+ * - Kullanıcı giriş yapmış olmalıdır (REQ-002)
+ * - En az bir hesap mevcut olmalıdır (REQ-003)
+ * - Gönderen hesapta yeterli bakiye olmalıdır
+ * 
+ * Adım Adım Uygulanacak İşlemler:
+ * 1. Dashboard ekranında "İşlemler" bölümüne gidilir
+ * 2. "Transfer" sekmesine tıklanır
+ * 3. Gönderen ve alıcı hesap bilgileri girilir
+ * 4. "Transfer Et" butonuna tıklanır
+ * 
+ * Beklenen Sonuç:
+ * - Transfer işlemi başarılı olmalıdır
+ * - Her iki hesap bakiyesi güncellenmiş olmalıdır
+ * 
+ * Son Koşullar:
+ * - Gönderen hesap bakiyesi azalmış olmalıdır
+ * - Alıcı hesap bakiyesi artmış olmalıdır
  */
 public class Test6_Transfer extends BaseSeleniumTest {
 

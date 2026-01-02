@@ -9,7 +9,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Senaryosu 7: Bakiye Sorgulama
- * Use Case: Bakiye sorgulama işlemi
+ * 
+ * Test Durumu Kimliği: REQ-007
+ * 
+ * İlgili Gereksinimler:
+ * - Kullanıcı tüm hesaplarının bakiyelerini görüntüleyebilmelidir
+ * - Hesap bilgileri doğru şekilde görüntülenmelidir
+ * 
+ * Ön Koşullar:
+ * - Kullanıcı giriş yapmış olmalıdır (REQ-002)
+ * - En az bir hesap mevcut olmalıdır (REQ-003)
+ * 
+ * Adım Adım Uygulanacak İşlemler:
+ * 1. Dashboard ekranında "Hesaplarım" bölümüne gidilir
+ * 2. Sistem otomatik olarak hesapları yükler
+ * 
+ * Beklenen Sonuç:
+ * - Tüm hesaplar listelenmelidir
+ * - Her hesap için bakiye bilgisi görüntülenmelidir
+ * 
+ * Son Koşullar:
+ * - Hesap bilgileri güncel olmalıdır
  */
 public class Test7_BalanceInquiry extends BaseSeleniumTest {
 
