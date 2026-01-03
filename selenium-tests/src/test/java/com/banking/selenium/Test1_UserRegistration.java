@@ -56,16 +56,31 @@ public class Test1_UserRegistration extends BaseSeleniumTest {
         driver.findElement(By.id("regLastName")).sendKeys("Test");
         driver.findElement(By.id("regPhone")).sendKeys("5551234567");
 
-        // Kayıt butonuna tıkla
-        WebElement registerButton = driver.findElement(By.xpath("//form[@id='registerForm']//button[@type='submit']"));
-        registerButton.click();
+        // Kayıt butonuna tıkla (JavaScript click - headless mod için daha güvenilir)
+        WebElement registerButton = wait.until(ExpectedConditions.elementToBeClickable(
+            By.xpath("//form[@id='registerForm']//button[@type='submit']")));
+        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
 
-        // Başarı mesajını kontrol et
-        WebElement message = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("registerMessage")));
-        String messageText = message.getText();
-        System.out.println("Register message: " + messageText);
-        assertTrue(messageText.contains("başarılı") || messageText.contains("success") || messageText.contains("Kayıt başarılı"),
-            "Kayıt işlemi başarısız oldu. Mesaj: " + messageText);
+        // Başarı mesajı elementinin görünür olmasını bekle
+        WebElement message = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
+        
+        // Metnin dolmasını bekle (Boş olmamasını sağla)
+        wait.until(driver -> {
+            String text = message.getText().trim();
+            return !text.isEmpty();
+        });
+
+        String messageText = message.getText().trim();
+        System.out.println("Register message: [" + messageText + "]");
+        
+        // Hata durumunda sayfa kaynağını yazdır (Sorunu anlamak için)
+        if (messageText.isEmpty()) {
+            System.out.println("SAYFA KAYNAĞI: " + driver.getPageSource());
+        }
+        
+        String lowerMessage = messageText.toLowerCase();
+        assertTrue(lowerMessage.contains("başarılı") || lowerMessage.contains("success"),
+            "Kayıt işlemi başarısız oldu. Mesaj: [" + messageText + "]");
     }
 }
 
