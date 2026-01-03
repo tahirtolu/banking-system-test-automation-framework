@@ -80,21 +80,27 @@ pipeline {
             steps {
                 echo 'Sistem sağlık kontrolü yapılıyor...'
                 bat '''
+                    echo Container durumlari:
+                    docker-compose ps
+                    echo.
+                    echo Frontend kontrolu:
+                    curl -s -o nul -w "Frontend HTTP Code: %%{http_code}\n" http://localhost:8082
+                    echo.
                     setlocal enabledelayedexpansion
                     for /L %%i in (1,1,60) do (
                         curl -s -o nul -w "%%{http_code}" http://localhost:8081/api/auth/login > temp_code.txt 2>&1
                         set /p HTTP_CODE=<temp_code.txt
                         del temp_code.txt
                         if "!HTTP_CODE!"=="405" (
-                            echo Sistem hazır! (405 = Method Not Allowed, backend calisiyor)
+                            echo Backend hazır! (405 = Method Not Allowed, backend calisiyor)
                             exit /b 0
                         )
                         if "!HTTP_CODE!"=="200" (
-                            echo Sistem hazır!
+                            echo Backend hazır!
                             exit /b 0
                         )
                         if "!HTTP_CODE!"=="403" (
-                            echo Sistem hazır! (403 = Forbidden, backend calisiyor)
+                            echo Backend hazır! (403 = Forbidden, backend calisiyor)
                             exit /b 0
                         )
                         if "!HTTP_CODE!"=="" (
@@ -106,6 +112,7 @@ pipeline {
                     )
                     echo Sistem başlatılamadı! Container loglarini kontrol edin:
                     docker-compose logs banking-app
+                    docker-compose logs banking-frontend
                     exit /b 1
                 '''
             }
