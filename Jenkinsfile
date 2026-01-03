@@ -69,6 +69,7 @@ pipeline {
                 bat '''
                     docker-compose down -v
                     docker-compose up -d
+                    echo Container\'lar başlatıldı, backend\'in hazır olması bekleniyor...
                     ping 127.0.0.1 -n 91 > nul
                 '''
             }
@@ -78,16 +79,18 @@ pipeline {
             steps {
                 echo 'Sistem sağlık kontrolü yapılıyor...'
                 bat '''
-                    for /L %%i in (1,1,30) do (
+                    setlocal enabledelayedexpansion
+                    for /L %%i in (1,1,60) do (
                         curl -f http://localhost:8081/api/auth/login >nul 2>&1
                         if !errorlevel! equ 0 (
                             echo Sistem hazır!
                             exit /b 0
                         )
-                        echo Bekleniyor... (%%i/30)
+                        echo Bekleniyor... (%%i/60)
                         ping 127.0.0.1 -n 3 > nul
                     )
-                    echo Sistem başlatılamadı!
+                    echo Sistem başlatılamadı! Container loglarini kontrol edin:
+                    docker-compose logs banking-app
                     exit /b 1
                 '''
             }
