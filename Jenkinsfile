@@ -114,6 +114,12 @@ pipeline {
         stage('Selenium Test 1 - User Registration') {
             steps {
                 echo 'Selenium Test 1: Kullanıcı Kaydı çalıştırılıyor...'
+                bat '''
+                    echo Container durumlari:
+                    docker-compose ps
+                    echo Backend loglari (son 20 satir):
+                    docker-compose logs --tail=20 banking-app
+                '''
                 dir('selenium-tests') {
                     bat """
                         "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test1_UserRegistration
