@@ -69,7 +69,8 @@ pipeline {
                 bat '''
                     docker-compose down -v
                     docker-compose up -d
-                    echo Container\'lar başlatıldı, backend\'in hazır olması bekleniyor...
+                    echo Container\'lar başlatıldı, servislerin hazır olması bekleniyor...
+                    docker-compose ps
                     ping 127.0.0.1 -n 91 > nul
                 '''
             }
