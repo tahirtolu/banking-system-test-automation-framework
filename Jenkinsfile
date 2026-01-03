@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_COMPOSE = 'docker-compose'
         MAVEN_HOME = tool 'Maven-3.9.5'
-        JAVA_HOME = tool 'JDK-17'
+        JAVA_HOME = tool 'JDK-21'
     }
 
     stages {
