@@ -77,7 +77,7 @@ pipeline {
                 echo 'Sistem sağlık kontrolü yapılıyor...'
                 bat '''
                     for /L %%i in (1,1,30) do (
-                        curl -f http://localhost:8080/api/auth/login >nul 2>&1
+                        curl -f http://localhost:8081/api/auth/login >nul 2>&1
                         if !errorlevel! equ 0 (
                             echo Sistem hazır!
                             exit /b 0

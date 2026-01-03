@@ -13,7 +13,7 @@ import java.time.Duration;
 public class BaseSeleniumTest {
     protected WebDriver driver;
     protected WebDriverWait wait;
-    protected static final String BASE_URL = "http://localhost:8080";
+    protected static final String BASE_URL = "http://localhost:8081";
     // Frontend URL - proje root'undan frontend klasörüne giden yol
     protected static final String FRONTEND_URL = "file:///" + 
         System.getProperty("user.dir")
