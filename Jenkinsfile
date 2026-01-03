@@ -57,7 +57,9 @@ pipeline {
         stage('Docker Build') {
             steps {
                 echo 'Docker image oluşturuluyor...'
-                bat 'docker-compose build banking-app'
+                timeout(time: 20, unit: 'MINUTES') {
+                    bat 'docker-compose build banking-app'
+                }
             }
         }
 
@@ -67,7 +69,7 @@ pipeline {
                 bat '''
                     docker-compose down -v
                     docker-compose up -d
-                    timeout /t 30
+                    ping 127.0.0.1 -n 91 > nul
                 '''
             }
         }
@@ -83,7 +85,7 @@ pipeline {
                             exit /b 0
                         )
                         echo Bekleniyor... (%%i/30)
-                        timeout /t 2 >nul
+                        ping 127.0.0.1 -n 3 > nul
                     )
                     echo Sistem başlatılamadı!
                     exit /b 1
