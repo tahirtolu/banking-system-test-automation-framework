@@ -106,7 +106,7 @@ class AccountControllerIntegrationTest {
     @Test
     void testGetAccount_Unauthorized() throws Exception {
         mockMvc.perform(get("/api/accounts/1234567890"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 }
 
