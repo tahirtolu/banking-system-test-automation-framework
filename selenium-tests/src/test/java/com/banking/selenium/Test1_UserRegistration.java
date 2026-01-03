@@ -62,8 +62,10 @@ public class Test1_UserRegistration extends BaseSeleniumTest {
 
         // Başarı mesajını kontrol et
         WebElement message = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("registerMessage")));
-        assertTrue(message.getText().contains("başarılı") || message.getText().contains("success"),
-            "Kayıt işlemi başarısız oldu");
+        String messageText = message.getText();
+        System.out.println("Register message: " + messageText);
+        assertTrue(messageText.contains("başarılı") || messageText.contains("success") || messageText.contains("Kayıt başarılı"),
+            "Kayıt işlemi başarısız oldu. Mesaj: " + messageText);
     }
 }
 
