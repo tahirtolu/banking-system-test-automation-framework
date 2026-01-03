@@ -81,12 +81,26 @@ pipeline {
                 bat '''
                     setlocal enabledelayedexpansion
                     for /L %%i in (1,1,60) do (
-                        curl -f http://localhost:8081/api/auth/login >nul 2>&1
-                        if !errorlevel! equ 0 (
+                        curl -s -o nul -w "%%{http_code}" http://localhost:8081/api/auth/login > temp_code.txt 2>&1
+                        set /p HTTP_CODE=<temp_code.txt
+                        del temp_code.txt
+                        if "!HTTP_CODE!"=="405" (
+                            echo Sistem hazır! (405 = Method Not Allowed, backend calisiyor)
+                            exit /b 0
+                        )
+                        if "!HTTP_CODE!"=="200" (
                             echo Sistem hazır!
                             exit /b 0
                         )
-                        echo Bekleniyor... (%%i/60)
+                        if "!HTTP_CODE!"=="403" (
+                            echo Sistem hazır! (403 = Forbidden, backend calisiyor)
+                            exit /b 0
+                        )
+                        if "!HTTP_CODE!"=="" (
+                            echo Bekleniyor... (%%i/60) Backend henuz baslamadi
+                        ) else (
+                            echo Bekleniyor... (%%i/60) HTTP Code: !HTTP_CODE!
+                        )
                         ping 127.0.0.1 -n 3 > nul
                     )
                     echo Sistem başlatılamadı! Container loglarini kontrol edin:
