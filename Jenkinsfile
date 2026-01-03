@@ -12,26 +12,26 @@ pipeline {
             steps {
                 echo 'GitHub\'dan kodlar çekiliyor...'
                 checkout scm
-                sh 'git rev-parse HEAD > commit_hash.txt'
-                sh 'cat commit_hash.txt'
+                bat 'git rev-parse HEAD > commit_hash.txt'
+                bat 'type commit_hash.txt'
             }
         }
 
         stage('Build') {
             steps {
                 echo 'Kodlar build ediliyor...'
-                sh '''
-                    ${MAVEN_HOME}/bin/mvn clean compile -DskipTests
-                '''
+                bat """
+                    "%MAVEN_HOME%\\bin\\mvn.cmd" clean compile -DskipTests
+                """
             }
         }
 
         stage('Unit Tests') {
             steps {
                 echo 'Birim testleri çalıştırılıyor...'
-                sh '''
-                    ${MAVEN_HOME}/bin/mvn test -Dtest=*Test
-                '''
+                bat """
+                    "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=*Test
+                """
             }
             post {
                 always {
@@ -44,9 +44,9 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 echo 'Entegrasyon testleri çalıştırılıyor...'
-                sh '''
-                    ${MAVEN_HOME}/bin/mvn test -Dtest=*IntegrationTest
-                '''
+                bat """
+                    "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=*IntegrationTest
+                """
             }
             post {
                 always {
@@ -59,19 +59,17 @@ pipeline {
         stage('Docker Build') {
             steps {
                 echo 'Docker image oluşturuluyor...'
-                sh '''
-                    docker-compose build banking-app
-                '''
+                bat 'docker-compose build banking-app'
             }
         }
 
         stage('Start Containers') {
             steps {
                 echo 'Docker container\'lar başlatılıyor...'
-                sh '''
+                bat '''
                     docker-compose down -v
                     docker-compose up -d
-                    sleep 30
+                    timeout /t 30
                 '''
             }
         }
@@ -79,17 +77,18 @@ pipeline {
         stage('Health Check') {
             steps {
                 echo 'Sistem sağlık kontrolü yapılıyor...'
-                sh '''
-                    for i in {1..30}; do
-                        if curl -f http://localhost:8080/api/auth/login > /dev/null 2>&1; then
-                            echo "Sistem hazır!"
-                            exit 0
-                        fi
-                        echo "Bekleniyor... ($i/30)"
-                        sleep 2
-                    done
-                    echo "Sistem başlatılamadı!"
-                    exit 1
+                bat '''
+                    for /L %%i in (1,1,30) do (
+                        curl -f http://localhost:8080/api/auth/login >nul 2>&1
+                        if !errorlevel! equ 0 (
+                            echo Sistem hazır!
+                            exit /b 0
+                        )
+                        echo Bekleniyor... (%%i/30)
+                        timeout /t 2 >nul
+                    )
+                    echo Sistem başlatılamadı!
+                    exit /b 1
                 '''
             }
         }
@@ -98,9 +97,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 1: Kullanıcı Kaydı çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test1_UserRegistration
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test1_UserRegistration
+                    """
                 }
             }
             post {
@@ -114,9 +113,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 2: Kullanıcı Girişi çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test2_UserLogin
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test2_UserLogin
+                    """
                 }
             }
             post {
@@ -130,9 +129,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 3: Hesap Oluşturma çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test3_AccountCreation
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test3_AccountCreation
+                    """
                 }
             }
             post {
@@ -146,9 +145,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 4: Para Yatırma çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test4_Deposit
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test4_Deposit
+                    """
                 }
             }
             post {
@@ -162,9 +161,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 5: Para Çekme çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test5_Withdrawal
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test5_Withdrawal
+                    """
                 }
             }
             post {
@@ -178,9 +177,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 6: Para Transferi çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test6_Transfer
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test6_Transfer
+                    """
                 }
             }
             post {
@@ -194,9 +193,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 7: Bakiye Sorgulama çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test7_BalanceInquiry
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test7_BalanceInquiry
+                    """
                 }
             }
             post {
@@ -210,9 +209,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 8: İşlem Geçmişi çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test8_TransactionHistory
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test8_TransactionHistory
+                    """
                 }
             }
             post {
@@ -226,9 +225,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 9: Geçersiz Giriş çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test9_InvalidLogin
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test9_InvalidLogin
+                    """
                 }
             }
             post {
@@ -242,9 +241,9 @@ pipeline {
             steps {
                 echo 'Selenium Test 10: Çıkış Yapma çalıştırılıyor...'
                 dir('selenium-tests') {
-                    sh '''
-                        ${MAVEN_HOME}/bin/mvn test -Dtest=Test10_Logout
-                    '''
+                    bat """
+                        "%MAVEN_HOME%\\bin\\mvn.cmd" test -Dtest=Test10_Logout
+                    """
                 }
             }
             post {
@@ -258,7 +257,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline tamamlandı. Container\'lar durduruluyor...'
-            sh 'docker-compose down -v || true'
+            bat 'docker-compose down -v || echo Container durdurulamadı'
             publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
         }
         success {
