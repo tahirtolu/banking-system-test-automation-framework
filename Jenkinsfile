@@ -36,7 +36,6 @@ pipeline {
             post {
                 always {
                     junit 'target/surefire-reports/*.xml'
-                    publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
                 }
             }
         }
@@ -51,7 +50,6 @@ pipeline {
             post {
                 always {
                     junit 'target/surefire-reports/*.xml'
-                    publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
                 }
             }
         }
@@ -258,7 +256,7 @@ pipeline {
         always {
             echo 'Pipeline tamamlandı. Container\'lar durduruluyor...'
             bat 'docker-compose down -v || echo Container durdurulamadı'
-            publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
+            junit '**/target/surefire-reports/*.xml'
         }
         success {
             echo 'Tüm testler başarılı!'
