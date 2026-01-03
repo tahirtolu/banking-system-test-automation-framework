@@ -14,20 +14,8 @@ public class BaseSeleniumTest {
     protected WebDriver driver;
     protected WebDriverWait wait;
     protected static final String BASE_URL = "http://localhost:8081";
-    // Frontend URL - proje root'undan frontend klasörüne giden yol
-    // Jenkins workspace'inde selenium-tests içindeyken bir üst dizine çıkıp frontend'e git
-    protected static final String FRONTEND_URL;
-    static {
-        String userDir = System.getProperty("user.dir").replace("\\", "/");
-        // selenium-tests klasörü içindeysek bir üst dizine çık
-        if (userDir.endsWith("/selenium-tests") || userDir.endsWith("selenium-tests")) {
-            int lastIndex = userDir.lastIndexOf("/selenium-tests");
-            if (lastIndex > 0) {
-                userDir = userDir.substring(0, lastIndex);
-            }
-        }
-        FRONTEND_URL = "file:///" + userDir + "/frontend/index.html";
-    }
+    // Frontend URL - Docker container'dan servis edilen frontend
+    protected static final String FRONTEND_URL = "http://localhost:8082";
 
     @BeforeEach
     public void setUp() {
