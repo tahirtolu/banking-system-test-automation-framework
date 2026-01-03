@@ -255,7 +255,13 @@ pipeline {
     post {
         always {
             echo 'Pipeline tamamlandı. Container\'lar durduruluyor...'
-            bat 'docker-compose down -v || echo Container durdurulamadı'
+            script {
+                try {
+                    bat 'docker-compose down -v'
+                } catch (Exception e) {
+                    echo 'Docker container durdurulamadı (Docker çalışmıyor olabilir)'
+                }
+            }
             junit '**/target/surefire-reports/*.xml'
         }
         success {
