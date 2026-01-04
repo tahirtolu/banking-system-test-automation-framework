@@ -35,19 +35,16 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            // DEBUG MODE: her şeye izin ver (geçici - debug amaçlı)
             .authorizeHttpRequests(auth -> auth
-                // Auth endpoint'leri herkese açık (token gerektirmez)
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/public/**").permitAll()
-                // OPTIONS (preflight) istekleri için
-                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                // Diğer tüm istekler authentication gerektirir
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
             );
-        
-        // JWT filter'ı ekle (UsernamePasswordAuthenticationFilter'dan önce)
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // DEBUG MODE: JWT filter'ı geçici olarak devre dışı bırak
+        // http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
