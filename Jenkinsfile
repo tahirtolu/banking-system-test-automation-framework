@@ -56,9 +56,9 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                echo 'Docker image oluşturuluyor...'
+                echo 'Docker image oluşturuluyor (cache olmadan)...'
                 timeout(time: 20, unit: 'MINUTES') {
-                    bat 'docker-compose build banking-app'
+                    bat 'docker-compose build --no-cache banking-app'
                 }
             }
         }
@@ -126,7 +126,7 @@ pipeline {
                     docker-compose ps
                     echo.
                     echo Frontend (nginx) loglari:
-                    docker-compose logs --tail=30 banking-frontend
+                    docker-compose logs --tail=30 frontend
                     echo.
                     echo Backend loglari (son 20 satir):
                     docker-compose logs --tail=20 banking-app
