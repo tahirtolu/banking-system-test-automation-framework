@@ -297,7 +297,10 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline tamamlandı. Container\'lar durduruluyor...'
+            junit '**/target/surefire-reports/*.xml'
+        }
+        success {
+            echo 'Tüm testler başarılı! Container\'lar durduruluyor...'
             script {
                 try {
                     bat 'docker-compose down -v'
@@ -305,13 +308,15 @@ pipeline {
                     echo 'Docker container durdurulamadı (Docker çalışmıyor olabilir)'
                 }
             }
-            junit '**/target/surefire-reports/*.xml'
-        }
-        success {
-            echo 'Tüm testler başarılı!'
         }
         failure {
-            echo 'Bazı testler başarısız oldu!'
+            echo 'Pipeline fail oldu, container\'lar DEBUG için AYAKTA bırakıldı'
+            echo 'Debug komutları:'
+            echo '  - Container durumları: docker-compose ps'
+            echo '  - Nginx logları: docker-compose logs banking-frontend'
+            echo '  - Backend logları: docker-compose logs banking-app'
+            echo '  - Nginx config test: docker-compose exec banking-frontend nginx -t'
+            echo '  - API test: curl http://localhost:8082/api/auth/login'
         }
     }
 }
