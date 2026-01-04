@@ -124,8 +124,18 @@ pipeline {
                 bat '''
                     echo Container durumlari:
                     docker-compose ps
+                    echo.
+                    echo Frontend (nginx) loglari:
+                    docker-compose logs --tail=30 banking-frontend
+                    echo.
                     echo Backend loglari (son 20 satir):
                     docker-compose logs --tail=20 banking-app
+                    echo.
+                    echo Nginx config test:
+                    docker-compose exec -T banking-frontend nginx -t 2>&1 || echo Nginx config test failed
+                    echo.
+                    echo Testing /api endpoint through nginx:
+                    curl -v http://localhost:8082/api/auth/login 2>&1 | findstr /C:"HTTP" /C:"405" /C:"403" /C:"Connection"
                 '''
                 dir('selenium-tests') {
                     bat """
