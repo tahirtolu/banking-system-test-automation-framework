@@ -52,7 +52,9 @@ public class Test6_Transfer extends BaseSeleniumTest {
                     .until(ExpectedConditions.presenceOfElementLocated(By.id("registerMessage")));
             int attempts = 0;
             while (attempts < 60) { // 60 * 500ms = 30 saniye
+                String msg = registerMessage.getText().trim();
                 String msgLower = msg.toLowerCase();
+
                 // "yapılıyor" kelimesi kaybolduysa ve mesaj doluysa, işlem bitmiştir
                 if (!msgLower.contains("yapılıyor") && !msg.isEmpty()) {
                     // Hata kontrolü yap
