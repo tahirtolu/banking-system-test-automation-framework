@@ -42,18 +42,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class Test1_UserRegistration extends BaseSeleniumTest {
 
     /**
-     * Backend'in hazır olmasını bekle (max 60 saniye)
+     * Backend'in hazır olmasını bekle (max 90 saniye)
+     * Önce direkt backend'e (8081) bak, sonra Nginx üzerinden (8082) kontrol et
      */
     private void waitForBackend() {
-        String backendHealthUrl = "http://localhost:8082/api/auth/login";
-        int maxAttempts = 60;
+        String backendDirectUrl = "http://localhost:8081/api/auth/login";  // Direkt backend
+        String backendNginxUrl = "http://localhost:8082/api/auth/login";   // Nginx üzerinden
+        int maxAttempts = 90;  // 90 saniyeye çıkarıldı
         int attempt = 0;
 
         System.out.println("Backend hazır olana kadar bekleniyor...");
+        System.out.println("1. Adım: Direkt backend kontrolü (port 8081)...");
 
-        while (attempt < maxAttempts) {
+        // Önce direkt backend'e bak (Nginx'e bağlı değil)
+        boolean backendReady = false;
+        while (attempt < maxAttempts && !backendReady) {
             try {
-                URL url = new URL(backendHealthUrl);
+                URL url = new URL(backendDirectUrl);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
                 connection.setConnectTimeout(2000);
@@ -63,14 +68,19 @@ public class Test1_UserRegistration extends BaseSeleniumTest {
 
                 // 403, 405, 200 = Backend çalışıyor
                 if (responseCode == 403 || responseCode == 405 || responseCode == 200) {
-                    System.out.println("✓ Backend hazır! (HTTP " + responseCode + ")");
-                    return;
+                    System.out.println("✓ Backend hazır! (Direkt - HTTP " + responseCode + ")");
+                    backendReady = true;
+                    break;
                 }
 
-                System.out.println("Bekleniyor... (" + (attempt + 1) + "/" + maxAttempts + ")");
+                if (attempt % 10 == 0) {
+                    System.out.println("Bekleniyor... (" + (attempt + 1) + "/" + maxAttempts + ") Backend henüz hazır değil (HTTP " + responseCode + ")");
+                }
 
             } catch (Exception e) {
-                System.out.println("Bekleniyor... (" + (attempt + 1) + "/" + maxAttempts + ")");
+                if (attempt % 10 == 0) {
+                    System.out.println("Bekleniyor... (" + (attempt + 1) + "/" + maxAttempts + ") Backend henüz başlamadı: " + e.getMessage());
+                }
             }
 
             try {
@@ -82,7 +92,48 @@ public class Test1_UserRegistration extends BaseSeleniumTest {
             attempt++;
         }
 
-        System.err.println("⚠ UYARI: Backend 60 saniye içinde hazır olmadı!");
+        if (!backendReady) {
+            System.err.println("⚠ UYARI: Backend 90 saniye içinde hazır olmadı!");
+            return;
+        }
+
+        // Backend hazır, şimdi Nginx üzerinden kontrol et
+        System.out.println("2. Adım: Nginx proxy kontrolü (port 8082)...");
+        attempt = 0;
+        while (attempt < 30) {  // Nginx için 30 saniye yeterli
+            try {
+                URL url = new URL(backendNginxUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(2000);
+                connection.setReadTimeout(2000);
+
+                int responseCode = connection.getResponseCode();
+
+                // 403, 405, 200, 502 değil = Nginx çalışıyor ve backend'e ulaşabiliyor
+                if (responseCode == 403 || responseCode == 405 || responseCode == 200) {
+                    System.out.println("✓ Nginx proxy hazır! (HTTP " + responseCode + ")");
+                    return;
+                }
+                
+                if (responseCode == 502) {
+                    System.out.println("Nginx 502 döndürüyor, backend'e ulaşamıyor... (" + (attempt + 1) + "/30)");
+                }
+
+            } catch (Exception e) {
+                System.out.println("Nginx kontrolü... (" + (attempt + 1) + "/30)");
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            attempt++;
+        }
+
+        System.err.println("⚠ UYARI: Nginx proxy 30 saniye içinde hazır olmadı, ama direkt backend çalışıyor!");
     }
 
     @Test
