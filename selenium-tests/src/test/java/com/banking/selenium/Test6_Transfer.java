@@ -45,11 +45,27 @@ public class Test6_Transfer extends BaseSeleniumTest {
         // Kayıt mesajının görünmesini ve metninin dolmasını bekle (Test1'deki gibi)
         WebElement registerMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
         
-        // Metnin dolmasını bekle (Boş olmamasını sağla) - "Kayıt yapılıyor..." mesajı kaybolana kadar bekle
+        // Metnin dolmasını bekle (Boş olmamasını sağla) - Test1'deki gibi daha esnek
         wait.until(driver -> {
             String text = registerMessage.getText().trim();
-            return !text.isEmpty() && !text.toLowerCase().contains("yapılıyor");
+            return !text.isEmpty();
         });
+        
+        // "Kayıt yapılıyor..." mesajı kaybolana kadar bekle (maksimum 10 saniye)
+        int attempts = 0;
+        while (attempts < 20) {  // 20 * 500ms = 10 saniye
+            String text = registerMessage.getText().trim().toLowerCase();
+            if (!text.contains("yapılıyor") && !text.isEmpty()) {
+                break;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            attempts++;
+        }
         
         // Kayıt başarı mesajını kontrol et
         String registerMsg = registerMessage.getText().trim();

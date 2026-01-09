@@ -47,6 +47,13 @@
             <version>2.0.9</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- ✅ CDP (Chrome DevTools Protocol) uyarılarını susturur -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-devtools-v119</artifactId> <version>4.15.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
