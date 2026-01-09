@@ -49,9 +49,11 @@
         </dependency>
 
         <!-- ✅ CDP (Chrome DevTools Protocol) uyarılarını susturur -->
+        <!-- Not: v119 kullanılıyor çünkü v143 hata veriyor -->
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-devtools-v119</artifactId> <version>4.15.0</version>
+            <artifactId>selenium-devtools-v119</artifactId>
+            <version>4.15.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
