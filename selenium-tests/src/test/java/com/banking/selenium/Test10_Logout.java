@@ -149,24 +149,6 @@ public class Test10_Logout extends BaseSeleniumTest {
         } catch (InterruptedException e) {
         }
 
-        // Login
-        try {
-            WebElement loginTab = driver.findElement(By.xpath("//button[contains(text(), 'Giriş Yap')]"));
-            if (loginTab.isDisplayed())
-                loginTab.click();
-        } catch (Exception e) {
-        }
-
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("loginUsername")));
-        driver.findElement(By.id("loginUsername")).clear();
-        driver.findElement(By.id("loginUsername")).sendKeys(username);
-        driver.findElement(By.id("loginPassword")).clear();
-        driver.findElement(By.id("loginPassword")).sendKeys(password);
-
-        WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//form[@id='loginForm']//button[@type='submit']")));
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
-
         // Dashboard'un yüklendiğini bekle
         // Dashboard'un yüklendiğini bekle (30 saniye timeout)
         org.openqa.selenium.support.ui.WebDriverWait dashboardWait = new org.openqa.selenium.support.ui.WebDriverWait(
