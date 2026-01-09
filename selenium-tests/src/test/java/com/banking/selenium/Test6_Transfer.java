@@ -5,6 +5,9 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,23 +43,29 @@ public class Test6_Transfer extends BaseSeleniumTest {
                 By.xpath("//form[@id='registerForm']//button[@type='submit']")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
 
-        // ✅ DOĞRU YAKLAŞIM: Kayıt mesajı assertion'ı KALDIRILDI
-        // UI mesajına güvenilmez (timing problemi). Gerçek doğrulama login ile yapılacak.
-        // Backend'in kayıt işlemini tamamlaması için kısa bir bekleme
+        // ✅ Kayıt işleminin tamamlanmasını bekle (UI mesajına güvenme, sadece backend'in tamamlamasını bekle)
+        // Pipeline'da yavaş olabileceği için "yapılıyor" mesajının kaybolmasını bekle (max 10 saniye)
         try {
-            Thread.sleep(2000);  // Backend response için bekle
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // Kayıt mesajını sadece bilgi amaçlı logla (assertion yok)
-        try {
-            WebElement registerMessage = driver.findElement(By.id("registerMessage"));
-            String registerMsg = registerMessage.getText().trim();
-            System.out.println("ℹ Kayıt mesajı (bilgi amaçlı): [" + registerMsg + "]");
+            WebElement registerMessage = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("registerMessage")));
+            int attempts = 0;
+            while (attempts < 20) {  // 20 * 500ms = 10 saniye
+                String msg = registerMessage.getText().trim().toLowerCase();
+                // "yapılıyor" kelimesi kaybolduysa ve mesaj doluysa, kayıt tamamlandı demektir
+                if (!msg.contains("yapılıyor") && !msg.isEmpty()) {
+                    System.out.println("✓ Kayıt işlemi tamamlandı (mesaj: [" + registerMessage.getText().trim() + "])");
+                    break;
+                }
+                try { Thread.sleep(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                attempts++;
+            }
+            // Son durumu logla (assertion yok, sadece bilgi)
+            String finalMsg = registerMessage.getText().trim();
+            System.out.println("ℹ Kayıt mesajı (bilgi amaçlı): [" + finalMsg + "]");
         } catch (Exception e) {
-            // Mesaj yoksa sorun değil, login ile doğrulanacak
-            System.out.println("ℹ Kayıt mesajı görüntülenemedi (login ile doğrulanacak)");
+            // Mesaj elementi bulunamazsa veya timeout olursa, yine de devam et
+            System.out.println("ℹ Kayıt mesajı kontrol edilemedi, login ile doğrulanacak: " + e.getMessage());
+            // Ekstra bekleme (güvenlik için)
+            try { Thread.sleep(3000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
         }
 
         // 2. ADIM: GİRİŞ YAPMA
@@ -74,13 +83,34 @@ public class Test6_Transfer extends BaseSeleniumTest {
                 By.xpath("//form[@id='loginForm']//button[@type='submit']")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
 
-        // Login sonrası Jenkins yavaşlığına karşı bekleme
-        try { Thread.sleep(3000); } catch (InterruptedException e) { }
-
-        // ✅ GERÇEK DOĞRULAMA: Dashboard görünüyorsa → Register + Login başarılıdır
-        WebElement dashboard = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("dashboard-section")));
-        assertTrue(dashboard.isDisplayed(), "❌ Dashboard görünmedi! (Kayıt veya login başarısız)");
-        System.out.println("✓ Login başarılı! (Bu, kayıt işleminin de başarılı olduğunu doğrular)");
+        // Login sonrası dashboard'ın görünmesini bekle (Pipeline'da yavaş olabilir)
+        // Özel bir WebDriverWait oluştur (20 saniye timeout - Pipeline için yeterli)
+        WebDriverWait dashboardWait = new WebDriverWait(driver, Duration.ofSeconds(20));
+        
+        try {
+            // Dashboard'ın hem presence hem de visibility'sini bekle
+            // Bu, "yapılıyor" mesajının kaybolması ve dashboard'ın görünmesi için yeterli süre verir
+            WebElement dashboard = dashboardWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard-section")));
+            
+            // ✅ GERÇEK DOĞRULAMA: Dashboard görünüyorsa → Register + Login başarılıdır
+            assertTrue(dashboard.isDisplayed(), "❌ Dashboard görünmedi! (Kayıt veya login başarısız)");
+            System.out.println("✓ Login başarılı! (Bu, kayıt işleminin de başarılı olduğunu doğrular)");
+        } catch (org.openqa.selenium.TimeoutException e) {
+            // Dashboard 20 saniye içinde görünmedi
+            System.err.println("❌ Dashboard görünmedi (timeout - 20 saniye)! Kayıt veya login başarısız olabilir.");
+            System.err.println("Sayfa kaynağı kontrol ediliyor...");
+            try {
+                String pageSource = driver.getPageSource();
+                if (pageSource.contains("dashboard-section")) {
+                    System.err.println("⚠ Dashboard elementi sayfada var ama görünür değil (CSS display:none olabilir)");
+                } else {
+                    System.err.println("⚠ Dashboard elementi sayfada yok (login başarısız olabilir)");
+                }
+            } catch (Exception ex) {
+                System.err.println("⚠ Sayfa kaynağı kontrol edilemedi: " + ex.getMessage());
+            }
+            throw new AssertionError("Dashboard görünmedi! (Timeout - 20 saniye içinde kayıt veya login başarısız)", e);
+        }
 
         // 3. ADIM: HESAPLARI OLUŞTURMA
         WebElement accountTypeSelect = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("accountType")));
