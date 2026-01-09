@@ -79,7 +79,13 @@ public class Test6_Transfer extends BaseSeleniumTest {
             String finalMsg = registerMessage.getText().trim();
             System.out.println("ℹ Kayıt mesajı (bilgi amaçlı): [" + finalMsg + "]");
         } catch (Exception e) {
-            // Mesaj elementi bulunamazsa veya timeout olursa, yine de devam et
+            // Eğer bizim fırlattığımız "BAŞARISIZ" hatası ise, bunu yutma ve testi patlat
+            if (e.getMessage() != null && e.getMessage().contains("BAŞARISIZ")) {
+                throw e;
+            }
+
+            // Mesaj elementi bulunamazsa veya timeout olursa, yine de devam et (belki kayıt
+            // olmuştur)
             System.out.println("ℹ Kayıt mesajı kontrol edilemedi, login ile doğrulanacak: " + e.getMessage());
             // Ekstra bekleme (güvenlik için)
             try {
