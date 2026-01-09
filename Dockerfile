@@ -6,6 +6,8 @@ RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
+# Create data directory for SQLite database
+RUN mkdir -p /app/data
 COPY --from=build /app/target/banking-system-1.0.0.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

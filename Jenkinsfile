@@ -70,8 +70,21 @@ pipeline {
                     docker-compose down -v
                     docker-compose up -d
                     echo Container\'lar başlatıldı, servislerin hazır olması bekleniyor...
+                    echo.
+                    echo === Container Durumlari (ilk kontrol) ===
                     docker-compose ps
-                    ping 127.0.0.1 -n 91 > nul
+                    echo.
+                    echo Backend container\'inin başlaması için 120 saniye bekleniyor...
+                    ping 127.0.0.1 -n 121 > nul
+                    echo.
+                    echo === Container Durumlari (bekleme sonrasi) ===
+                    docker-compose ps
+                    echo.
+                    echo === Backend Loglari (SON 100 SATIR - CRASH VARSA GORUNUR) ===
+                    docker-compose logs --tail=100 banking-app 2>&1
+                    echo.
+                    echo === Frontend Loglari (son 20 satir) ===
+                    docker-compose logs --tail=20 frontend
                 '''
             }
         }
@@ -111,8 +124,15 @@ pipeline {
                         ping 127.0.0.1 -n 3 > nul
                     )
                     echo Sistem başlatılamadı! Container loglarini kontrol edin:
-                    docker-compose logs banking-app
-                    docker-compose logs banking-frontend
+                    echo.
+                    echo === BACKEND LOGLARI (SON 100 SATIR) ===
+                    docker-compose logs --tail=100 banking-app 2>&1
+                    echo.
+                    echo === FRONTEND LOGLARI (SON 50 SATIR) ===
+                    docker-compose logs --tail=50 frontend 2>&1
+                    echo.
+                    echo === CONTAINER DURUMLARI ===
+                    docker-compose ps -a
                     exit /b 1
                 '''
             }
@@ -122,20 +142,26 @@ pipeline {
             steps {
                 echo 'Selenium Test 1: Kullanıcı Kaydı çalıştırılıyor...'
                 bat '''
-                    echo Container durumlari:
+                    echo === Container Durumlari ===
                     docker-compose ps
                     echo.
-                    echo Frontend (nginx) loglari:
-                    docker-compose logs --tail=30 frontend
+                    echo === Backend Container Health Check ===
+                    docker-compose ps banking-app
                     echo.
-                    echo Backend loglari (son 20 satir):
-                    docker-compose logs --tail=20 banking-app
+                    echo === Backend Loglari (SON 100 SATIR - HATA VARSA GORUNUR) ===
+                    docker-compose logs --tail=100 banking-app 2>&1
                     echo.
-                    echo Nginx config test:
-                    docker-compose exec -T banking-frontend nginx -t 2>&1 || echo Nginx config test failed
+                    echo === Backend Direkt Test (port 8081) ===
+                    curl -v http://localhost:8081/api/auth/login 2>&1 | findstr /C:"HTTP" /C:"405" /C:"403" /C:"Connection" /C:"502" /C:"503" /C:"500" || echo Backend direkt erisimde sorun var
                     echo.
-                    echo Testing /api endpoint through nginx:
-                    curl -v http://localhost:8082/api/auth/login 2>&1 | findstr /C:"HTTP" /C:"405" /C:"403" /C:"Connection"
+                    echo === Frontend (nginx) Loglari ===
+                    docker-compose logs --tail=30 frontend 2>&1
+                    echo.
+                    echo === Nginx Config Test ===
+                    docker-compose exec -T frontend nginx -t 2>&1 || echo Nginx config test failed
+                    echo.
+                    echo === Testing /api endpoint through nginx (port 8082) ===
+                    curl -v http://localhost:8082/api/auth/login 2>&1 | findstr /C:"HTTP" /C:"405" /C:"403" /C:"Connection" /C:"502" /C:"503" || echo Nginx proxy erisimde sorun var
                 '''
                 dir('selenium-tests') {
                     bat """

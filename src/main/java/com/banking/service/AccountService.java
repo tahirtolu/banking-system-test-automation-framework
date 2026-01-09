@@ -44,6 +44,9 @@ public class AccountService {
         // SQLite JDBC driver doesn't support GeneratedKeys ResultSet properly
         // Workaround: Use native SQL with last_insert_rowid() to get the ID
         try {
+            // Flush any pending changes before native query
+            entityManager.flush();
+            
             // Use native SQL INSERT to avoid getGeneratedKeys() issue
             String insertSql = "INSERT INTO accounts (account_number, balance, account_type, created_at, user_id) " +
                     "VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
@@ -54,6 +57,9 @@ public class AccountService {
                     .setParameter(3, account.getAccountType().name())
                     .setParameter(4, user.getId())
                     .executeUpdate();
+            
+            // Flush to ensure INSERT is committed to database before querying last_insert_rowid()
+            entityManager.flush();
             
             // Get the last inserted ID using SQLite's last_insert_rowid()
             Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
