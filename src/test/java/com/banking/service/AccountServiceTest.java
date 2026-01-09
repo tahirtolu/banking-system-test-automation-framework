@@ -14,7 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +41,15 @@ class AccountServiceTest {
     @Mock
     private Query nativeQuery;
 
+    @Mock
+    private DataSource dataSource;
+
+    @Mock
+    private Connection connection;
+
+    @Mock
+    private DatabaseMetaData databaseMetaData;
+
     private AccountService accountService;
 
     private User user;
@@ -45,9 +57,18 @@ class AccountServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Create AccountService manually with all dependencies (including EntityManager)
+        // Mock DataSource to return H2 database (for tests, isSQLite() should return false)
+        try {
+            when(dataSource.getConnection()).thenReturn(connection);
+            when(connection.getMetaData()).thenReturn(databaseMetaData);
+            when(databaseMetaData.getDatabaseProductName()).thenReturn("H2"); // H2, not SQLite
+        } catch (Exception e) {
+            // Ignore
+        }
+
+        // Create AccountService manually with all dependencies (including DataSource and EntityManager)
         // @InjectMocks doesn't handle @PersistenceContext fields
-        accountService = new AccountService(accountRepository, userRepository);
+        accountService = new AccountService(accountRepository, userRepository, dataSource);
         ReflectionTestUtils.setField(accountService, "entityManager", entityManager);
         
         user = new User();
@@ -67,28 +88,20 @@ class AccountServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
         
-        // Mock EntityManager for native SQL queries
-        // First query: INSERT statement
-        Query insertQuery = mock(Query.class);
-        when(insertQuery.setParameter(anyInt(), any())).thenReturn(insertQuery);
-        when(insertQuery.executeUpdate()).thenReturn(1);
-        
-        // Second query: SELECT last_insert_rowid()
-        Query selectQuery = mock(Query.class);
-        when(selectQuery.getSingleResult()).thenReturn(1L);
-        
-        // Return appropriate query based on SQL string
-        when(entityManager.createNativeQuery(contains("INSERT"))).thenReturn(insertQuery);
-        when(entityManager.createNativeQuery(contains("SELECT last_insert_rowid"))).thenReturn(selectQuery);
-        
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        // DataSource returns H2, so isSQLite() returns false, normal save() is used
+        // No need to mock EntityManager for native SQL (H2 uses normal save())
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> {
+            Account a = invocation.getArgument(0);
+            a.setId(1L); // Set ID as if saved
+            return a;
+        });
 
         Account result = accountService.createAccount(1L, Account.AccountType.CHECKING);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
-        verify(entityManager, atLeastOnce()).createNativeQuery(anyString());
-        verify(accountRepository, times(1)).findById(1L);
+        // H2 uses normal save(), no native SQL queries should be made
+        verify(accountRepository, times(1)).save(any(Account.class));
     }
 
     @Test

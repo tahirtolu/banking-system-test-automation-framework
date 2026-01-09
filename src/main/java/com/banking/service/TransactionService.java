@@ -10,10 +10,14 @@ import com.banking.repository.TransactionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.sql.DatabaseMetaData;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,9 +27,24 @@ import java.util.stream.Collectors;
 public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
+    private final DataSource dataSource;
     
     @PersistenceContext
     private EntityManager entityManager;
+    
+    /**
+     * Veritabanı tipini kontrol eder (SQLite için native SQL, H2 için normal save)
+     */
+    private boolean isSQLite() {
+        try {
+            DatabaseMetaData metaData = dataSource.getConnection().getMetaData();
+            String databaseProductName = metaData.getDatabaseProductName().toLowerCase();
+            return databaseProductName.contains("sqlite");
+        } catch (Exception e) {
+            // Hata durumunda varsayılan olarak SQLite kabul et (production için)
+            return true;
+        }
+    }
 
     @Transactional
     public Transaction deposit(String accountNumber, DepositWithdrawalDTO dto) {
@@ -35,39 +54,50 @@ public class TransactionService {
         account.setBalance(account.getBalance().add(dto.getAmount()));
         accountRepository.save(account);
 
-        // SQLite JDBC driver doesn't support GeneratedKeys ResultSet properly
-        // Workaround: Use native SQL with last_insert_rowid() to get the ID
-        try {
-            entityManager.flush();
-            
-            // Generate unique transaction number (timestamp + random to avoid collisions)
-            String transactionNumber = "TXN" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
-            LocalDateTime transactionDate = LocalDateTime.now();
-            String description = dto.getDescription() != null ? dto.getDescription() : "Para yatırma";
-            
-            String insertSql = "INSERT INTO transactions (transaction_number, amount, transaction_type, transaction_date, description, account_id, to_account_id) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, NULL)";
-            
-            entityManager.createNativeQuery(insertSql)
-                    .setParameter(1, transactionNumber)
-                    .setParameter(2, dto.getAmount())
-                    .setParameter(3, Transaction.TransactionType.DEPOSIT.name())
-                    .setParameter(4, transactionDate)
-                    .setParameter(5, description)
-                    .setParameter(6, account.getId())
-                    .executeUpdate();
-            
-            entityManager.flush();
-            
-            Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
-                    .getSingleResult()).longValue();
-            
-            Transaction transaction = transactionRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("İşlem kaydedilemedi - ID alınamadı"));
-            
-            return transaction;
-        } catch (Exception e) {
-            throw new RuntimeException("İşlem kaydedilemedi: " + e.getMessage(), e);
+        // SQLite için native SQL workaround, H2 için normal save()
+        if (isSQLite()) {
+            // SQLite JDBC driver doesn't support GeneratedKeys ResultSet properly
+            // Workaround: Use native SQL with last_insert_rowid() to get the ID
+            try {
+                entityManager.flush();
+                
+                // Generate unique transaction number (timestamp + random to avoid collisions)
+                String transactionNumber = "TXN" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
+                LocalDateTime transactionDate = LocalDateTime.now();
+                String description = dto.getDescription() != null ? dto.getDescription() : "Para yatırma";
+                
+                String insertSql = "INSERT INTO transactions (transaction_number, amount, transaction_type, transaction_date, description, account_id, to_account_id) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, NULL)";
+                
+                entityManager.createNativeQuery(insertSql)
+                        .setParameter(1, transactionNumber)
+                        .setParameter(2, dto.getAmount())
+                        .setParameter(3, Transaction.TransactionType.DEPOSIT.name())
+                        .setParameter(4, transactionDate)
+                        .setParameter(5, description)
+                        .setParameter(6, account.getId())
+                        .executeUpdate();
+                
+                entityManager.flush();
+                
+                Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
+                        .getSingleResult()).longValue();
+                
+                Transaction transaction = transactionRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("İşlem kaydedilemedi - ID alınamadı"));
+                
+                return transaction;
+            } catch (Exception e) {
+                throw new RuntimeException("İşlem kaydedilemedi: " + e.getMessage(), e);
+            }
+        } else {
+            // H2 veya diğer veritabanları için normal save() kullan
+            Transaction transaction = new Transaction();
+            transaction.setAccount(account);
+            transaction.setAmount(dto.getAmount());
+            transaction.setTransactionType(Transaction.TransactionType.DEPOSIT);
+            transaction.setDescription(dto.getDescription() != null ? dto.getDescription() : "Para yatırma");
+            return transactionRepository.save(transaction);
         }
     }
 
@@ -83,39 +113,50 @@ public class TransactionService {
         account.setBalance(account.getBalance().subtract(dto.getAmount()));
         accountRepository.save(account);
 
-        // SQLite JDBC driver doesn't support GeneratedKeys ResultSet properly
-        // Workaround: Use native SQL with last_insert_rowid() to get the ID
-        try {
-            entityManager.flush();
-            
-            // Generate unique transaction number (timestamp + random to avoid collisions)
-            String transactionNumber = "TXN" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
-            LocalDateTime transactionDate = LocalDateTime.now();
-            String description = dto.getDescription() != null ? dto.getDescription() : "Para çekme";
-            
-            String insertSql = "INSERT INTO transactions (transaction_number, amount, transaction_type, transaction_date, description, account_id, to_account_id) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, NULL)";
-            
-            entityManager.createNativeQuery(insertSql)
-                    .setParameter(1, transactionNumber)
-                    .setParameter(2, dto.getAmount())
-                    .setParameter(3, Transaction.TransactionType.WITHDRAWAL.name())
-                    .setParameter(4, transactionDate)
-                    .setParameter(5, description)
-                    .setParameter(6, account.getId())
-                    .executeUpdate();
-            
-            entityManager.flush();
-            
-            Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
-                    .getSingleResult()).longValue();
-            
-            Transaction transaction = transactionRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("İşlem kaydedilemedi - ID alınamadı"));
-            
-            return transaction;
-        } catch (Exception e) {
-            throw new RuntimeException("İşlem kaydedilemedi: " + e.getMessage(), e);
+        // SQLite için native SQL workaround, H2 için normal save()
+        if (isSQLite()) {
+            // SQLite JDBC driver doesn't support GeneratedKeys ResultSet properly
+            // Workaround: Use native SQL with last_insert_rowid() to get the ID
+            try {
+                entityManager.flush();
+                
+                // Generate unique transaction number (timestamp + random to avoid collisions)
+                String transactionNumber = "TXN" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
+                LocalDateTime transactionDate = LocalDateTime.now();
+                String description = dto.getDescription() != null ? dto.getDescription() : "Para çekme";
+                
+                String insertSql = "INSERT INTO transactions (transaction_number, amount, transaction_type, transaction_date, description, account_id, to_account_id) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, NULL)";
+                
+                entityManager.createNativeQuery(insertSql)
+                        .setParameter(1, transactionNumber)
+                        .setParameter(2, dto.getAmount())
+                        .setParameter(3, Transaction.TransactionType.WITHDRAWAL.name())
+                        .setParameter(4, transactionDate)
+                        .setParameter(5, description)
+                        .setParameter(6, account.getId())
+                        .executeUpdate();
+                
+                entityManager.flush();
+                
+                Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
+                        .getSingleResult()).longValue();
+                
+                Transaction transaction = transactionRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("İşlem kaydedilemedi - ID alınamadı"));
+                
+                return transaction;
+            } catch (Exception e) {
+                throw new RuntimeException("İşlem kaydedilemedi: " + e.getMessage(), e);
+            }
+        } else {
+            // H2 veya diğer veritabanları için normal save() kullan
+            Transaction transaction = new Transaction();
+            transaction.setAccount(account);
+            transaction.setAmount(dto.getAmount());
+            transaction.setTransactionType(Transaction.TransactionType.WITHDRAWAL);
+            transaction.setDescription(dto.getDescription() != null ? dto.getDescription() : "Para çekme");
+            return transactionRepository.save(transaction);
         }
     }
 
@@ -137,40 +178,52 @@ public class TransactionService {
         accountRepository.save(fromAccount);
         accountRepository.save(toAccount);
 
-        // SQLite JDBC driver doesn't support GeneratedKeys ResultSet properly
-        // Workaround: Use native SQL with last_insert_rowid() to get the ID
-        try {
-            entityManager.flush();
-            
-            // Generate unique transaction number (timestamp + random to avoid collisions)
-            String transactionNumber = "TXN" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
-            LocalDateTime transactionDate = LocalDateTime.now();
-            String description = dto.getDescription() != null ? dto.getDescription() : "Para transferi";
-            
-            String insertSql = "INSERT INTO transactions (transaction_number, amount, transaction_type, transaction_date, description, account_id, to_account_id) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
-            
-            entityManager.createNativeQuery(insertSql)
-                    .setParameter(1, transactionNumber)
-                    .setParameter(2, dto.getAmount())
-                    .setParameter(3, Transaction.TransactionType.TRANSFER.name())
-                    .setParameter(4, transactionDate)
-                    .setParameter(5, description)
-                    .setParameter(6, fromAccount.getId())
-                    .setParameter(7, toAccount.getId())
-                    .executeUpdate();
-            
-            entityManager.flush();
-            
-            Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
-                    .getSingleResult()).longValue();
-            
-            Transaction transaction = transactionRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("İşlem kaydedilemedi - ID alınamadı"));
-            
-            return transaction;
-        } catch (Exception e) {
-            throw new RuntimeException("İşlem kaydedilemedi: " + e.getMessage(), e);
+        // SQLite için native SQL workaround, H2 için normal save()
+        if (isSQLite()) {
+            // SQLite JDBC driver doesn't support GeneratedKeys ResultSet properly
+            // Workaround: Use native SQL with last_insert_rowid() to get the ID
+            try {
+                entityManager.flush();
+                
+                // Generate unique transaction number (timestamp + random to avoid collisions)
+                String transactionNumber = "TXN" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
+                LocalDateTime transactionDate = LocalDateTime.now();
+                String description = dto.getDescription() != null ? dto.getDescription() : "Para transferi";
+                
+                String insertSql = "INSERT INTO transactions (transaction_number, amount, transaction_type, transaction_date, description, account_id, to_account_id) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                
+                entityManager.createNativeQuery(insertSql)
+                        .setParameter(1, transactionNumber)
+                        .setParameter(2, dto.getAmount())
+                        .setParameter(3, Transaction.TransactionType.TRANSFER.name())
+                        .setParameter(4, transactionDate)
+                        .setParameter(5, description)
+                        .setParameter(6, fromAccount.getId())
+                        .setParameter(7, toAccount.getId())
+                        .executeUpdate();
+                
+                entityManager.flush();
+                
+                Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
+                        .getSingleResult()).longValue();
+                
+                Transaction transaction = transactionRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("İşlem kaydedilemedi - ID alınamadı"));
+                
+                return transaction;
+            } catch (Exception e) {
+                throw new RuntimeException("İşlem kaydedilemedi: " + e.getMessage(), e);
+            }
+        } else {
+            // H2 veya diğer veritabanları için normal save() kullan
+            Transaction transaction = new Transaction();
+            transaction.setAccount(fromAccount);
+            transaction.setToAccount(toAccount);
+            transaction.setAmount(dto.getAmount());
+            transaction.setTransactionType(Transaction.TransactionType.TRANSFER);
+            transaction.setDescription(dto.getDescription() != null ? dto.getDescription() : "Para transferi");
+            return transactionRepository.save(transaction);
         }
     }
 

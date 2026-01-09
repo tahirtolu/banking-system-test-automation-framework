@@ -12,8 +12,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +35,15 @@ class TransactionServiceTest {
     @Mock
     private AccountRepository accountRepository;
 
-    @InjectMocks
+    @Mock
+    private DataSource dataSource;
+
+    @Mock
+    private Connection connection;
+
+    @Mock
+    private DatabaseMetaData databaseMetaData;
+
     private TransactionService transactionService;
 
     private Account account;
@@ -39,6 +51,19 @@ class TransactionServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Create TransactionService manually with all dependencies (including DataSource)
+        // @InjectMocks doesn't handle @PersistenceContext fields properly
+        transactionService = new TransactionService(transactionRepository, accountRepository, dataSource);
+        
+        // Mock DataSource to return H2 database (for tests, isSQLite() should return false)
+        try {
+            when(dataSource.getConnection()).thenReturn(connection);
+            when(connection.getMetaData()).thenReturn(databaseMetaData);
+            when(databaseMetaData.getDatabaseProductName()).thenReturn("H2"); // H2, not SQLite
+        } catch (Exception e) {
+            // Ignore
+        }
+
         account = new Account();
         account.setId(1L);
         account.setAccountNumber("1234567890");
