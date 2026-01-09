@@ -41,42 +41,73 @@ public class Test6_Transfer extends BaseSeleniumTest {
         WebElement registerButton = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//form[@id='registerForm']//button[@type='submit']")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
-        try { Thread.sleep(2000); } catch (InterruptedException e) { }
-
-        // Login
+        
+        // Kayıt işleminin tamamlanması için bekle
         try {
-            WebElement loginTab = driver.findElement(By.xpath("//button[contains(text(), 'Giriş Yap')]"));
-            if (loginTab.isDisplayed()) loginTab.click();
-        } catch (Exception e) { }
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
+        // Kayıt mesajını kontrol et (opsiyonel - hata olsa bile devam et)
+        try {
+            WebElement registerMessage = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("registerMessage")));
+            String registerMsg = registerMessage.getText().trim();
+            System.out.println("Kayıt mesajı: [" + registerMsg + "]");
+        } catch (Exception e) {
+            System.out.println("Kayıt mesajı kontrol edilemedi (devam ediliyor)");
+        }
+
+        // Giriş sekmesine geç (Test2'deki gibi sağlam yöntem)
+        WebElement loginTab = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//button[contains(text(), 'Giriş Yap')]")));
+        loginTab.click();
+
+        // Giriş formunu doldur
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("loginUsername")));
         driver.findElement(By.id("loginUsername")).clear();
         driver.findElement(By.id("loginUsername")).sendKeys(username);
         driver.findElement(By.id("loginPassword")).clear();
         driver.findElement(By.id("loginPassword")).sendKeys(password);
 
+        System.out.println("✓ Giriş formu dolduruldu: " + username);
+
+        // Giriş butonuna tıkla (JavaScript click)
         WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//form[@id='loginForm']//button[@type='submit']")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
-        
+
         // API isteğinin tamamlanması için bekle
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        
-        // Dashboard'un göründüğünü kontrol et (Test2'deki gibi)
+
+        // Login mesajını kontrol et (hata durumunda)
+        try {
+            WebElement loginMessage = driver.findElement(By.id("loginMessage"));
+            String loginMsg = loginMessage.getText().trim();
+            if (!loginMsg.isEmpty()) {
+                System.out.println("Login mesajı: [" + loginMsg + "]");
+            }
+        } catch (Exception e) {
+            // Mesaj yoksa sorun değil
+        }
+
+        // Dashboard'un göründüğünü kontrol et (Test2'deki gibi - kesin assertion)
         WebElement dashboard = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("dashboard-section")));
         String displayStyle = dashboard.getCssValue("display");
         
-        if (!dashboard.isDisplayed() || displayStyle.equals("none")) {
-            System.out.println("⚠ Dashboard görünmüyor, display: [" + displayStyle + "], isDisplayed: [" + dashboard.isDisplayed() + "]");
-            // Dashboard görünmüyorsa da devam et (bazı durumlarda JavaScript ile görünür hale getirilebilir)
-        } else {
-            System.out.println("✓ Dashboard görünüyor!");
-        }
+        System.out.println("\n=== Login Kontrolü ===");
+        System.out.println("Dashboard display style: [" + displayStyle + "]");
+        System.out.println("Dashboard isDisplayed: [" + dashboard.isDisplayed() + "]");
+        
+        // Dashboard görünmüyorsa login başarısız, test burada bitmeli
+        assertTrue(dashboard.isDisplayed() && !"none".equals(displayStyle), 
+            "❌ Login başarısız: Dashboard görünmedi (display=" + displayStyle + ", isDisplayed=" + dashboard.isDisplayed() + ")");
+        
+        System.out.println("✓ Dashboard görünüyor, login başarılı!");
         
         try { Thread.sleep(1000); } catch (InterruptedException e) { }
 
