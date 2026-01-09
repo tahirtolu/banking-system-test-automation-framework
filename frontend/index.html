@@ -21,50 +21,52 @@
 
             <!-- Login Form -->
             <div id="login-form" class="form-container">
-                <h2>Giriş Yap</h2>
+                <h2>🔐 Giriş Yap</h2>
                 <form id="loginForm">
                     <div class="form-group">
-                        <label for="loginUsername">Kullanıcı Adı:</label>
-                        <input type="text" id="loginUsername" name="username" required>
+                        <label for="loginUsername">👤 Kullanıcı Adı:</label>
+                        <input type="text" id="loginUsername" name="username" required placeholder="Kullanıcı adınızı girin">
                     </div>
                     <div class="form-group">
-                        <label for="loginPassword">Şifre:</label>
-                        <input type="password" id="loginPassword" name="password" required>
+                        <label for="loginPassword">🔒 Şifre:</label>
+                        <input type="password" id="loginPassword" name="password" required placeholder="Şifrenizi girin">
                     </div>
-                    <button type="submit" class="btn btn-primary">Giriş Yap</button>
+                    <button type="submit" class="btn btn-primary">🚀 Giriş Yap</button>
                 </form>
                 <div id="loginMessage" class="message"></div>
             </div>
 
             <!-- Register Form -->
             <div id="register-form" class="form-container" style="display: none;">
-                <h2>Kayıt Ol</h2>
+                <h2>📝 Kayıt Ol</h2>
                 <form id="registerForm">
                     <div class="form-group">
-                        <label for="regUsername">Kullanıcı Adı:</label>
-                        <input type="text" id="regUsername" name="username" required>
+                        <label for="regUsername">👤 Kullanıcı Adı:</label>
+                        <input type="text" id="regUsername" name="username" required placeholder="Maksimum 20 karakter" maxlength="20">
                     </div>
                     <div class="form-group">
-                        <label for="regPassword">Şifre:</label>
-                        <input type="password" id="regPassword" name="password" required>
+                        <label for="regPassword">🔒 Şifre:</label>
+                        <input type="password" id="regPassword" name="password" required placeholder="Güvenli bir şifre seçin">
                     </div>
                     <div class="form-group">
-                        <label for="regEmail">E-posta:</label>
-                        <input type="email" id="regEmail" name="email" required>
+                        <label for="regEmail">📧 E-posta:</label>
+                        <input type="email" id="regEmail" name="email" required placeholder="ornek@email.com">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="regFirstName">👤 Ad:</label>
+                            <input type="text" id="regFirstName" name="firstName" required placeholder="Adınız">
+                        </div>
+                        <div class="form-group">
+                            <label for="regLastName">👤 Soyad:</label>
+                            <input type="text" id="regLastName" name="lastName" required placeholder="Soyadınız">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="regFirstName">Ad:</label>
-                        <input type="text" id="regFirstName" name="firstName" required>
+                        <label for="regPhone">📱 Telefon:</label>
+                        <input type="text" id="regPhone" name="phoneNumber" required placeholder="5551234567">
                     </div>
-                    <div class="form-group">
-                        <label for="regLastName">Soyad:</label>
-                        <input type="text" id="regLastName" name="lastName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="regPhone">Telefon:</label>
-                        <input type="text" id="regPhone" name="phoneNumber" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Kayıt Ol</button>
+                    <button type="submit" class="btn btn-primary">✅ Kayıt Ol</button>
                 </form>
                 <div id="registerMessage" class="message"></div>
             </div>
@@ -79,31 +81,41 @@
 
             <!-- Account Management -->
             <div class="dashboard-card">
-                <h2>Hesap İşlemleri</h2>
-                <div class="form-group">
-                    <label for="accountType">Hesap Tipi:</label>
-                    <select id="accountType">
-                        <option value="CHECKING">Vadesiz</option>
-                        <option value="SAVINGS">Vadeli</option>
-                    </select>
-                    <button onclick="createAccount()" class="btn btn-primary">Hesap Oluştur</button>
+                <h2>💳 Hesap İşlemleri</h2>
+                <div class="account-create-form">
+                    <div class="form-group">
+                        <label for="accountType">Hesap Tipi:</label>
+                        <select id="accountType" class="form-select">
+                            <option value="CHECKING">📘 Vadesiz Hesap</option>
+                            <option value="SAVINGS">📗 Vadeli Hesap</option>
+                        </select>
+                    </div>
+                    <button onclick="createAccount()" class="btn btn-primary">
+                        ➕ Yeni Hesap Oluştur
+                    </button>
                 </div>
                 <div id="accountMessage" class="message"></div>
             </div>
 
             <!-- Account List -->
             <div class="dashboard-card">
-                <h2>Hesaplarım</h2>
-                <div id="accountsList"></div>
+                <h2>💼 Hesaplarım</h2>
+                <div class="accounts-grid" id="accountsList"></div>
             </div>
 
             <!-- Transaction Operations -->
             <div class="dashboard-card">
-                <h2>İşlemler</h2>
+                <h2>💸 İşlemler</h2>
                 <div class="transaction-tabs">
-                    <button class="tab-btn active" onclick="showTransactionTab('deposit')">Para Yatır</button>
-                    <button class="tab-btn" onclick="showTransactionTab('withdraw')">Para Çek</button>
-                    <button class="tab-btn" onclick="showTransactionTab('transfer')">Transfer</button>
+                    <button class="tab-btn active" onclick="showTransactionTab('deposit')">
+                        💰 Para Yatır
+                    </button>
+                    <button class="tab-btn" onclick="showTransactionTab('withdraw')">
+                        💸 Para Çek
+                    </button>
+                    <button class="tab-btn" onclick="showTransactionTab('transfer')">
+                        🔄 Transfer
+                    </button>
                 </div>
 
                 <!-- Deposit -->
@@ -166,13 +178,17 @@
 
             <!-- Transaction History -->
             <div class="dashboard-card">
-                <h2>İşlem Geçmişi</h2>
-                <div class="form-group">
-                    <label for="historyAccount">Hesap:</label>
-                    <select id="historyAccount"></select>
-                    <button onclick="loadTransactionHistory()" class="btn btn-primary">Geçmişi Yükle</button>
+                <h2>📊 İşlem Geçmişi</h2>
+                <div class="history-filter">
+                    <div class="form-group">
+                        <label for="historyAccount">Hesap Seçin:</label>
+                        <select id="historyAccount" class="form-select"></select>
+                    </div>
+                    <button onclick="loadTransactionHistory()" class="btn btn-primary">
+                        🔍 Geçmişi Yükle
+                    </button>
                 </div>
-                <div id="transactionHistory"></div>
+                <div id="transactionHistory" class="transaction-history-container"></div>
             </div>
         </div>
     </div>

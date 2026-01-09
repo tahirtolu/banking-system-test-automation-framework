@@ -5,6 +5,8 @@ import com.banking.entity.Account;
 import com.banking.entity.User;
 import com.banking.repository.AccountRepository;
 import com.banking.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,9 @@ import java.util.stream.Collectors;
 public class AccountService {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Transactional
     public Account createAccount(Long userId, Account.AccountType accountType) {
@@ -36,7 +41,37 @@ public class AccountService {
         account.setAccountType(accountType);
         account.setUser(user);
 
-        return accountRepository.save(account);
+        // SQLite JDBC driver doesn't support GeneratedKeys ResultSet properly
+        // Workaround: Use native SQL with last_insert_rowid() to get the ID
+        try {
+            // Use native SQL INSERT to avoid getGeneratedKeys() issue
+            String insertSql = "INSERT INTO accounts (account_number, balance, account_type, created_at, user_id) " +
+                    "VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
+            
+            entityManager.createNativeQuery(insertSql)
+                    .setParameter(1, account.getAccountNumber())
+                    .setParameter(2, account.getBalance())
+                    .setParameter(3, account.getAccountType().name())
+                    .setParameter(4, user.getId())
+                    .executeUpdate();
+            
+            // Get the last inserted ID using SQLite's last_insert_rowid()
+            Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
+                    .getSingleResult()).longValue();
+            
+            // Query the saved account with ID
+            account = accountRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Hesap kaydedilemedi - ID alınamadı"));
+        } catch (Exception e) {
+            // If native SQL fails, check if account was saved by accountNumber
+            Account savedAccount = accountRepository.findByAccountNumber(accountNumber).orElse(null);
+            if (savedAccount != null) {
+                return savedAccount;
+            }
+            throw new RuntimeException("Hesap kaydedilemedi: " + e.getMessage(), e);
+        }
+        
+        return account;
     }
 
     public Account getAccountByNumber(String accountNumber) {

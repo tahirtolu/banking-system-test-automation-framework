@@ -9,15 +9,10 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # API reverse proxy
-    # Pipeline için: banking-app:8080 (Backend Docker container içinde)
-    # Lokal development için: host.docker.internal:8081 (Backend lokal çalışıyor)
-    # Not: Docker container içinde backend varsa banking-app:8080 kullanılır
-    #      Backend lokal çalışıyorsa host.docker.internal:8081 kullanılır
+    # API reverse proxy - Lokal backend için
+    # Backend lokal çalışıyor: mvn spring-boot:run (port 8081)
     location /api {
-        # Pipeline için: backend container içinde
-        # Lokal için: host.docker.internal kullanılacak (nginx.conf'u değiştirin)
-        proxy_pass http://banking-app:8080;
+        proxy_pass http://host.docker.internal:8081/api;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -32,7 +27,7 @@ server {
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
         
-        # CORS headers (backend handles CORS, but adding here too for safety)
+        # CORS headers
         add_header 'Access-Control-Allow-Origin' '*' always;
         add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS, PATCH' always;
         add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type' always;
@@ -49,4 +44,3 @@ server {
         }
     }
 }
-

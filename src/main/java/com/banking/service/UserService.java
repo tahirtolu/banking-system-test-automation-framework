@@ -5,6 +5,8 @@ import com.banking.dto.UserRegistrationDTO;
 import com.banking.entity.User;
 import com.banking.repository.UserRepository;
 import com.banking.util.JwtUtil;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Transactional
     public User registerUser(UserRegistrationDTO registrationDTO) {
@@ -34,7 +39,39 @@ public class UserService {
         user.setLastName(registrationDTO.getLastName());
         user.setPhoneNumber(registrationDTO.getPhoneNumber());
 
-        return userRepository.save(user);
+        // SQLite JDBC driver doesn't support GeneratedKeys ResultSet properly
+        // Workaround: Use native SQL with last_insert_rowid() to get the ID
+        try {
+            // Use native SQL INSERT to avoid getGeneratedKeys() issue
+            String insertSql = "INSERT INTO users (username, password, email, first_name, last_name, phone_number, created_at) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+            
+            entityManager.createNativeQuery(insertSql)
+                    .setParameter(1, user.getUsername())
+                    .setParameter(2, user.getPassword())
+                    .setParameter(3, user.getEmail())
+                    .setParameter(4, user.getFirstName())
+                    .setParameter(5, user.getLastName())
+                    .setParameter(6, user.getPhoneNumber())
+                    .executeUpdate();
+            
+            // Get the last inserted ID using SQLite's last_insert_rowid()
+            Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
+                    .getSingleResult()).longValue();
+            
+            // Query the saved user with ID
+            user = userRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Kullanıcı kaydedilemedi - ID alınamadı"));
+        } catch (Exception e) {
+            // If native SQL fails, check if user was saved by username
+            User savedUser = userRepository.findByUsername(registrationDTO.getUsername()).orElse(null);
+            if (savedUser != null) {
+                return savedUser;
+            }
+            throw new RuntimeException("Kullanıcı kaydedilemedi: " + e.getMessage(), e);
+        }
+        
+        return user;
     }
 
     public String login(LoginDTO loginDTO) {
