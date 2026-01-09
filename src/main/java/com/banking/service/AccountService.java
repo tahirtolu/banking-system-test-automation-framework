@@ -88,6 +88,7 @@ public class AccountService {
                 // Query the saved account with ID
                 account = accountRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("Hesap kaydedilemedi - ID alınamadı"));
+                return account;
             } catch (Exception e) {
                 // If native SQL fails, check if account was saved by accountNumber
                 Account savedAccount = accountRepository.findByAccountNumber(accountNumber).orElse(null);

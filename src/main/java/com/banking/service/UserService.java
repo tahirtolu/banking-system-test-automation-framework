@@ -88,6 +88,7 @@ public class UserService {
                 // Query the saved user with ID
                 user = userRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("Kullanıcı kaydedilemedi - ID alınamadı"));
+                return user;
             } catch (Exception e) {
                 // If native SQL fails, check if user was saved by username
                 User savedUser = userRepository.findByUsername(registrationDTO.getUsername()).orElse(null);
@@ -100,8 +101,6 @@ public class UserService {
             // H2 veya diğer veritabanları için normal save() kullan
             return userRepository.save(user);
         }
-        
-        return user;
     }
 
     public String login(LoginDTO loginDTO) {
