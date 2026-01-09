@@ -167,22 +167,29 @@ public class Test7_BalanceInquiry extends BaseSeleniumTest {
 
         // Hesaplar listesini kontrol et - DAHA ESNEK KONTROL
         try {
-            WebElement accountsList = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("accountsList")));
+            // Özel 30 saniyelik wait tanımlıyoruz (Pipeline yavaşlığı için)
+            org.openqa.selenium.support.ui.WebDriverWait longWait = new org.openqa.selenium.support.ui.WebDriverWait(
+                    driver, java.time.Duration.ofSeconds(30));
+
+            WebElement accountsList = longWait
+                    .until(ExpectedConditions.presenceOfElementLocated(By.id("accountsList")));
 
             // Element görünür olana kadar bekle
-            wait.until(ExpectedConditions.visibilityOf(accountsList));
+            longWait.until(ExpectedConditions.visibilityOf(accountsList));
 
             // "Henüz hesabınız yok" yazısı gidene kadar bekle (veya Hesap No gelene kadar)
             // Bu kritik çünkü hesap oluşturulduktan sonra listenin güncellenmesi zaman
             // alabilir
             try {
-                wait.until(driver -> {
-                    String text = accountsList.getText();
+                System.out.println("Hesap listesinin güncellenmesi bekleniyor (maks 30sn)...");
+                longWait.until(driver -> {
+                    String text = driver.findElement(By.id("accountsList")).getText();
                     return !text.contains("Henüz hesabınız yok") || text.contains("Hesap No")
                             || text.contains("Bakiye");
                 });
             } catch (org.openqa.selenium.TimeoutException e) {
-                System.out.println("⚠ Hesap listesi güncellenmedi, mevcut text: " + accountsList.getText());
+                System.out.println(
+                        "⚠ Hesap listesi 30 saniye içinde güncellenmedi! Mevcut text: " + accountsList.getText());
             }
 
             assertTrue(accountsList.isDisplayed(), "Hesaplar listesi görünmüyor");
