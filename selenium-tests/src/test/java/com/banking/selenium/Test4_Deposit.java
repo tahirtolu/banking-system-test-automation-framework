@@ -171,44 +171,5 @@ public class Test4_Deposit extends BaseSeleniumTest {
                 "Para yatırma işlemi başarısız. Mesaj: [" + messageText + "]");
     }
 
-    /**
-     * Backend'in hazır olmasını bekle (max 60 saniye)
-     */
-    private void waitForBackend() {
-        String backendHealthUrl = "http://localhost:8082/api/auth/login";
-        int maxAttempts = 60;
-        int attempt = 0;
 
-        System.out.println("Backend hazır olana kadar bekleniyor...");
-
-        while (attempt < maxAttempts) {
-            try {
-                URL url = new URL(backendHealthUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(2000);
-                connection.setReadTimeout(2000);
-
-                int responseCode = connection.getResponseCode();
-
-                if (responseCode == 403 || responseCode == 405 || responseCode == 200) {
-                    System.out.println("✓ Backend hazır! (HTTP " + responseCode + ")");
-                    return;
-                }
-
-            } catch (Exception e) {
-                // Sessizce bekle
-            }
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            attempt++;
-        }
-
-        System.err.println("⚠ UYARI: Backend 60 saniye içinde hazır olmadı!");
-    }
 }
