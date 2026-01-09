@@ -52,9 +52,16 @@ public class Test6_Transfer extends BaseSeleniumTest {
                     .until(ExpectedConditions.presenceOfElementLocated(By.id("registerMessage")));
             int attempts = 0;
             while (attempts < 60) { // 60 * 500ms = 30 saniye
-                String msg = registerMessage.getText().trim().toLowerCase();
-                // "yapılıyor" kelimesi kaybolduysa ve mesaj doluysa, kayıt tamamlandı demektir
-                if (!msg.contains("yapılıyor") && !msg.isEmpty()) {
+                String msgLower = msg.toLowerCase();
+                // "yapılıyor" kelimesi kaybolduysa ve mesaj doluysa, işlem bitmiştir
+                if (!msgLower.contains("yapılıyor") && !msg.isEmpty()) {
+                    // Hata kontrolü yap
+                    if (msgLower.contains("hata") || msgLower.contains("error") ||
+                            msgLower.contains("fail") || msgLower.contains("could not") ||
+                            msgLower.contains("exception")) {
+                        throw new RuntimeException("❌ Kayıt işlemi BAŞARISIZ oldu! Mesaj: [" + msg + "]");
+                    }
+
                     System.out.println("✓ Kayıt işlemi tamamlandı (mesaj: [" + registerMessage.getText().trim() + "])");
                     break;
                 }
@@ -97,7 +104,7 @@ public class Test6_Transfer extends BaseSeleniumTest {
 
         // Login sonrası dashboard'ın görünmesini bekle (Pipeline'da yavaş olabilir)
         // Özel bir WebDriverWait oluştur (20 saniye timeout - Pipeline için yeterli)
-        WebDriverWait dashboardWait = new WebDriverWait(driver, Duration.ofSeconds(20));
+        WebDriverWait dashboardWait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
         try {
             // Dashboard'ın hem presence hem de visibility'sini bekle
