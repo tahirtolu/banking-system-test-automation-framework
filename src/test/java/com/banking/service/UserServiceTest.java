@@ -5,6 +5,8 @@ import com.banking.dto.UserRegistrationDTO;
 import com.banking.entity.User;
 import com.banking.repository.UserRepository;
 import com.banking.util.JwtUtil;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,12 +14,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,7 +34,12 @@ class UserServiceTest {
     @Mock
     private JwtUtil jwtUtil;
 
-    @InjectMocks
+    @Mock
+    private EntityManager entityManager;
+
+    @Mock
+    private Query nativeQuery;
+
     private UserService userService;
 
     private UserRegistrationDTO registrationDTO;
@@ -40,6 +47,11 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Create UserService manually with all dependencies (including EntityManager)
+        // @InjectMocks doesn't handle @PersistenceContext fields
+        userService = new UserService(userRepository, passwordEncoder, jwtUtil);
+        ReflectionTestUtils.setField(userService, "entityManager", entityManager);
+        
         registrationDTO = new UserRegistrationDTO();
         registrationDTO.setUsername("testuser");
         registrationDTO.setPassword("password123");
@@ -63,13 +75,30 @@ class UserServiceTest {
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        
+        // Mock EntityManager for native SQL queries
+        // First query: INSERT statement
+        Query insertQuery = mock(Query.class);
+        when(insertQuery.setParameter(anyInt(), any())).thenReturn(insertQuery);
+        when(insertQuery.executeUpdate()).thenReturn(1);
+        
+        // Second query: SELECT last_insert_rowid()
+        Query selectQuery = mock(Query.class);
+        when(selectQuery.getSingleResult()).thenReturn(1L);
+        
+        // Return appropriate query based on SQL string
+        when(entityManager.createNativeQuery(contains("INSERT"))).thenReturn(insertQuery);
+        when(entityManager.createNativeQuery(contains("SELECT last_insert_rowid"))).thenReturn(selectQuery);
+        
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         User result = userService.registerUser(registrationDTO);
 
         assertNotNull(result);
         assertEquals("testuser", result.getUsername());
-        verify(userRepository, times(1)).save(any(User.class));
+        assertEquals(1L, result.getId());
+        verify(entityManager, atLeastOnce()).createNativeQuery(anyString());
+        verify(userRepository, times(1)).findById(1L);
     }
 
     @Test
