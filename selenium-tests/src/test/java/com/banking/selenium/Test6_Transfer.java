@@ -40,27 +40,29 @@ public class Test6_Transfer extends BaseSeleniumTest {
                 By.xpath("//form[@id='registerForm']//button[@type='submit']")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
 
+        // --- KAYIT MESAJI BEKLEME (GÜNCELLENDİ) ---
         WebElement registerMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
 
-        wait.until(driver -> {
-            String text = registerMessage.getText().trim();
-            return !text.isEmpty();
-        });
-
         int regAttempts = 0;
-        while (regAttempts < 20) {
-            String text = registerMessage.getText().trim().toLowerCase();
-            if (!text.contains("yapılıyor") && !text.isEmpty()) {
+        String registerMsg = "";
+
+        // "Kayıt yapılıyor..." yazısı gidene kadar 20 saniye boyunca (40 deneme) bekle
+        while (regAttempts < 40) {
+            registerMsg = registerMessage.getText().trim();
+            String lowerMsg = registerMsg.toLowerCase();
+
+            // Eğer mesaj boş değilse VE içinde "yapılıyor" kelimesi KALMAMIŞSA artık asıl sonuç gelmiştir.
+            if (!registerMsg.isEmpty() && !lowerMsg.contains("yapılıyor")) {
                 break;
             }
+
             try { Thread.sleep(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
             regAttempts++;
         }
 
-        String registerMsg = registerMessage.getText().trim();
-        System.out.println("✓ Kayıt mesajı: [" + registerMsg + "]");
+        System.out.println("✓ Kayıt mesajı final durumu: [" + registerMsg + "]");
         assertTrue(registerMsg.toLowerCase().contains("başarılı") || registerMsg.toLowerCase().contains("success"),
-                "❌ Kayıt başarısız: [" + registerMsg + "]");
+                "❌ Kayıt başarısız veya zaman aşımı: [" + registerMsg + "]");
 
         // 2. ADIM: GİRİŞ YAPMA
         WebElement loginTab = wait.until(ExpectedConditions.elementToBeClickable(
@@ -77,7 +79,8 @@ public class Test6_Transfer extends BaseSeleniumTest {
                 By.xpath("//form[@id='loginForm']//button[@type='submit']")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
 
-        try { Thread.sleep(2000); } catch (InterruptedException e) { }
+        // Login sonrası Jenkins yavaşlığına karşı bekleme
+        try { Thread.sleep(3000); } catch (InterruptedException e) { }
 
         WebElement dashboard = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("dashboard-section")));
         assertTrue(dashboard.isDisplayed(), "❌ Dashboard görünmedi!");
@@ -132,13 +135,12 @@ public class Test6_Transfer extends BaseSeleniumTest {
                     By.xpath("//div[@id='transfer-tab']//button[contains(text(), 'Transfer Et')]")));
             ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", transferButton);
 
-            // ✅ DUPLICATE VARIABLE FIX: 'attempts' ismini 'transferAttempts' olarak değiştirdik.
             try {
                 WebElement transMsgElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("transactionMessage")));
 
                 int transferAttempts = 0;
                 String messageText = "";
-                while (transferAttempts < 15 && messageText.trim().isEmpty()) {
+                while (transferAttempts < 20 && messageText.trim().isEmpty()) {
                     messageText = transMsgElement.getText().trim();
                     if (!messageText.isEmpty()) break;
                     try { Thread.sleep(500); } catch (InterruptedException e) { }
