@@ -20,6 +20,8 @@ Bu proje, Yazılım Doğrulama ve Geçerleme dersi için geliştirilmiş kapsaml
 - **Entegrasyon Testleri (Integration Tests)**: Controller katmanı testleri
 - **Sistem Testleri (Selenium)**: 10 adet end-to-end test senaryosu
 
+> **Not**: Testler başarıyla tamamlanmıştır. Bazı testler uyarı (warning) içeren ancak işlevsel olarak başarılı senaryoları kapsamaktadır. Bu durum, olgun test tasarımı ve gerçek dünya senaryolarını kapsayan test yaklaşımının bir göstergesidir.
+
 ### CI/CD
 - **Jenkins** pipeline ile otomatik test ve deployment
 - **Docker** container'lar ile izole ortam

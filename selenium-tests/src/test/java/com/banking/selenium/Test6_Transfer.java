@@ -42,21 +42,23 @@ public class Test6_Transfer extends BaseSeleniumTest {
                 By.xpath("//form[@id='registerForm']//button[@type='submit']")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
         
-        // Kayıt işleminin tamamlanması için bekle
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        // Kayıt mesajını kontrol et (opsiyonel - hata olsa bile devam et)
-        try {
-            WebElement registerMessage = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("registerMessage")));
-            String registerMsg = registerMessage.getText().trim();
-            System.out.println("Kayıt mesajı: [" + registerMsg + "]");
-        } catch (Exception e) {
-            System.out.println("Kayıt mesajı kontrol edilemedi (devam ediliyor)");
-        }
+        // Kayıt mesajının görünmesini ve metninin dolmasını bekle (Test1'deki gibi)
+        WebElement registerMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
+        
+        // Metnin dolmasını bekle (Boş olmamasını sağla) - "Kayıt yapılıyor..." mesajı kaybolana kadar bekle
+        wait.until(driver -> {
+            String text = registerMessage.getText().trim();
+            return !text.isEmpty() && !text.toLowerCase().contains("yapılıyor");
+        });
+        
+        // Kayıt başarı mesajını kontrol et
+        String registerMsg = registerMessage.getText().trim();
+        System.out.println("✓ Kayıt mesajı: [" + registerMsg + "]");
+        
+        // Kayıt başarısızsa test burada bitmeli
+        String lowerMessage = registerMsg.toLowerCase();
+        assertTrue(lowerMessage.contains("başarılı") || lowerMessage.contains("success"),
+            "❌ Kayıt başarısız. Mesaj: [" + registerMsg + "]");
 
         // Giriş sekmesine geç (Test2'deki gibi sağlam yöntem)
         WebElement loginTab = wait.until(ExpectedConditions.elementToBeClickable(
