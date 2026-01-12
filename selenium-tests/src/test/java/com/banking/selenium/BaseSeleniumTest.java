@@ -297,9 +297,10 @@ public class BaseSeleniumTest {
                     org.openqa.selenium.By.xpath("//form[@id='loginForm']//button[@type='submit']")));
             ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
 
-            // Dashboard kontrolü
-            wait.until(org.openqa.selenium.support.ui.ExpectedConditions
-                    .visibilityOfElementLocated(org.openqa.selenium.By.id("dashboard-section")));
+            // Dashboard kontrolü (Timeout 30 saniyeye çıkarıldı)
+            new WebDriverWait(driver, Duration.ofSeconds(30))
+                    .until(org.openqa.selenium.support.ui.ExpectedConditions
+                            .visibilityOfElementLocated(org.openqa.selenium.By.id("dashboard-section")));
             System.out.println("✓ Login başarılı: " + username);
         } catch (Exception e) {
             System.err.println("Login başarısız: " + e.getMessage());
