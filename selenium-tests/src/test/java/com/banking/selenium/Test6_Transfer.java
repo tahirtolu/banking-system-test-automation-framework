@@ -21,59 +21,75 @@ public class Test6_Transfer extends BaseSeleniumTest {
 
         driver.get(FRONTEND_URL);
 
-        // ========== KAYIT OLMA ==========
-        WebElement registerTab = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", registerTab);
-
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("regUsername")));
-
-        long timestamp = System.currentTimeMillis();
-        String username = "test" + (timestamp % 100000);
+        // ========== KAYIT OLMA (RETRY LOGIC) ==========
+        String username = "";
         String password = "password123";
-        String email = "test" + timestamp + "@test.com";
+        boolean registrationSuccess = false;
 
-        driver.findElement(By.id("regUsername")).sendKeys(username);
-        driver.findElement(By.id("regPassword")).sendKeys(password);
-        driver.findElement(By.id("regEmail")).sendKeys(email);
-        driver.findElement(By.id("regFirstName")).sendKeys("Test");
-        driver.findElement(By.id("regLastName")).sendKeys("User");
-        driver.findElement(By.id("regPhone")).sendKeys("5551234567");
-
-        WebElement registerButton = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//form[@id='registerForm']//button[@type='submit']")));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
-
-        // Kayıt mesajını bekle ve kontrol et
-        WebElement registerMessage = wait
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
-
-        // Mesajın dolmasını ve "yapılıyor" dışındaki nihai sonucu göstermesini bekle
-        int regAttempts = 0;
-        String regMessageText = "";
-        while (regAttempts < 40) { // 20 saniye kadar bekle
-            regMessageText = registerMessage.getText().trim();
-            // Mesaj boş değilse VE "yapılıyor" içermiyorsa (yani success veya fail ise)
-            // döngüden çık
-            if (!regMessageText.isEmpty() && !regMessageText.toLowerCase().contains("yapılıyor")) {
-                break;
-            }
+        for (int i = 0; i < 3; i++) {
             try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
+                if (i > 0) {
+                    System.out.println("⚠ Kayıt retrying (" + (i + 1) + "/3)...");
+                    driver.navigate().refresh();
+                    Thread.sleep(2000);
+                }
+
+                WebElement registerTab = wait.until(ExpectedConditions.elementToBeClickable(
+                        By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
+                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", registerTab);
+
+                wait.until(ExpectedConditions.presenceOfElementLocated(By.id("regUsername")));
+
+                long timestamp = System.currentTimeMillis();
+                username = "test" + (timestamp % 100000);
+                String email = "test" + timestamp + "@test.com";
+
+                driver.findElement(By.id("regUsername")).sendKeys(username);
+                driver.findElement(By.id("regPassword")).sendKeys(password);
+                driver.findElement(By.id("regEmail")).sendKeys(email);
+                driver.findElement(By.id("regFirstName")).sendKeys("Test");
+                driver.findElement(By.id("regLastName")).sendKeys("User");
+                driver.findElement(By.id("regPhone")).sendKeys("5551234567");
+
+                WebElement registerButton = wait.until(ExpectedConditions.elementToBeClickable(
+                        By.xpath("//form[@id='registerForm']//button[@type='submit']")));
+                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
+
+                // Kayıt mesajını bekle ve kontrol et
+                WebElement registerMessage = wait
+                        .until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
+
+                // Mesajın dolmasını ve "yapılıyor" dışındaki nihai sonucu göstermesini bekle
+                int regAttempts = 0;
+                String regMessageText = "";
+                while (regAttempts < 40) { // 20 saniye kadar bekle
+                    regMessageText = registerMessage.getText().trim();
+                    if (!regMessageText.isEmpty() && !regMessageText.toLowerCase().contains("yapılıyor")) {
+                        break;
+                    }
+                    Thread.sleep(500);
+                    regAttempts++;
+                }
+
+                System.out.println("Kayıt mesajı: [" + regMessageText + "]");
+
+                if (regMessageText.toLowerCase().contains("başarı")
+                        || regMessageText.toLowerCase().contains("success")) {
+                    System.out.println("✓ Kayıt başarılı: " + username);
+                    registrationSuccess = true;
+                    break;
+                } else {
+                    System.out.println("⚠ Kayıt başarısız (Deneme " + (i + 1) + "): " + regMessageText);
+                }
+
+            } catch (Exception e) {
+                System.out.println("⚠ Kayıt hatası (Deneme " + (i + 1) + "): " + e.getMessage());
             }
-            regAttempts++;
         }
 
-        System.out.println("Kayıt mesajı: [" + regMessageText + "]");
-
-        // Eğer kayıt başarısız ise testi sonlandır
-        if (!regMessageText.toLowerCase().contains("başarı") &&
-                !regMessageText.toLowerCase().contains("success")) {
-            throw new RuntimeException("Kayıt başarısız: " + regMessageText);
+        if (!registrationSuccess) {
+            throw new RuntimeException("Kayıt işlemi 3 denemede de başarısız oldu.");
         }
-
-        System.out.println("✓ Kayıt başarılı: " + username);
 
         try {
             Thread.sleep(3000);
