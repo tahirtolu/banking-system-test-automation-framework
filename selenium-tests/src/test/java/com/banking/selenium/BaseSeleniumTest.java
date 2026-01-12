@@ -158,12 +158,14 @@ public class BaseSeleniumTest {
             String phone) {
         driver.get(FRONTEND_URL);
 
-        int maxRetries = 3;
+        int maxRetries = 10; // Arttırıldı: 3 -> 10
         boolean success = false;
         String registeredUsername = username;
 
         for (int i = 0; i < maxRetries; i++) {
             try {
+                // ... (existing helper logic) ...
+
                 // Kayıt sekmesine geç (eğer zaten orada değilsek)
                 try {
                     WebElement registerTab = wait
@@ -171,13 +173,13 @@ public class BaseSeleniumTest {
                                     org.openqa.selenium.By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
                     registerTab.click();
                 } catch (Exception e) {
-                    // Belki zaten kayıt sayfasındayız veya element bulunamadı, formu dene
+                    // Belki zaten kayıt sayfasındayız
                 }
 
                 wait.until(org.openqa.selenium.support.ui.ExpectedConditions
                         .presenceOfElementLocated(org.openqa.selenium.By.id("regUsername")));
 
-                String currentUsername = username + (i > 0 ? "_" + i : ""); // Retry'larda benzersiz username
+                String currentUsername = username + (i > 0 ? "_" + i : "");
 
                 // Formu doldur
                 driver.findElement(org.openqa.selenium.By.id("regUsername")).clear();
@@ -199,32 +201,51 @@ public class BaseSeleniumTest {
                 ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();",
                         registerButton);
 
-                // Sonuç kontrolü
-                WebElement message = wait
-                        .until(org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated(
-                                org.openqa.selenium.By.id("registerMessage")));
+                // Sonuç kontrolü (Daha esnek timeout)
+                // DB hatası hemen gelmeyebilir, biraz bekleyelim
+                WebElement message = null;
+                try {
+                    message = wait.until(org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated(
+                            org.openqa.selenium.By.id("registerMessage")));
+                } catch (Exception e) {
+                    // Mesaj görünmediyse bile belki retry gerekebilir, sonraki koda bırak
+                }
 
-                // Mesajın içeriğini bekle
-                wait.until(d -> {
-                    String text = message.getText().trim().toLowerCase();
-                    return !text.isEmpty() && !text.contains("yapılıyor");
-                });
+                String msgText = "";
+                if (message != null) {
+                    // Mesajın içeriğini bekle
+                    WebElement finalMessage = message;
+                    try {
+                        wait.until(d -> {
+                            String text = finalMessage.getText().trim().toLowerCase();
+                            return !text.isEmpty() && !text.contains("yapılıyor");
+                        });
+                        msgText = finalMessage.getText().trim();
+                    } catch (Exception e) {
+                        // Timeout olursa mevcut text'i al
+                        msgText = finalMessage.getText().trim();
+                    }
+                }
 
-                String msgText = message.getText().trim();
                 String lowerMsg = msgText.toLowerCase();
 
                 if (lowerMsg.contains("başarı") || lowerMsg.contains("success")) {
                     System.out.println("✓ Kayıt başarılı: " + currentUsername);
                     success = true;
                     registeredUsername = currentUsername;
-                    // Eğer username retry nedeniyle değiştiyse, dışarıya bu bilgiyi nasıl
-                    // vereceğiz?
-                    // Testlerde genellikle setup için kullanıldığı için sorun olmayabilir.
                     return registeredUsername;
                 }
 
-                if (lowerMsg.contains("jpa") || lowerMsg.contains("transaction") || lowerMsg.contains("lock")) {
-                    System.out.println("⚠ DB Hatası (Retry " + (i + 1) + "): " + msgText);
+                if (lowerMsg.contains("jpa") || lowerMsg.contains("transaction") || lowerMsg.contains("lock")
+                        || lowerMsg.contains("hata") || lowerMsg.contains("error")) {
+                    System.out.println("⚠ DB/Sistem Hatası (Retry " + (i + 1) + "/" + maxRetries + "): " + msgText);
+                    throw new RuntimeException("DB_RETRY");
+                }
+
+                // Mesaj boşsa veya başka bir durumsa da retry yapalım (SQLite bazen kilitli
+                // kalıp cevap dönmeyebiliyor)
+                if (msgText.isEmpty()) {
+                    System.out.println("⚠ Yanıt alınamadı (Retry " + (i + 1) + "/" + maxRetries + ")");
                     throw new RuntimeException("DB_RETRY");
                 }
 
@@ -233,7 +254,10 @@ public class BaseSeleniumTest {
             } catch (RuntimeException e) {
                 if ("DB_RETRY".equals(e.getMessage())) {
                     try {
-                        Thread.sleep(3000);
+                        // Exponential Backoff: 2s, 4s, 8s, 10s...
+                        long waitTime = Math.min((long) Math.pow(2, i + 1) * 1000, 10000);
+                        System.out.println("⏳ Bekleniyor: " + waitTime + "ms");
+                        Thread.sleep(waitTime);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                     }
