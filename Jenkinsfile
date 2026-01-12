@@ -63,31 +63,21 @@ pipeline {
             }
         }
 
-        stage('Start Containers') {
-            steps {
-                echo 'Docker container\'lar başlatılıyor...'
-                bat '''
-                    docker-compose down -v
-                    docker-compose up -d
-                    echo Container\'lar başlatıldı, servislerin hazır olması bekleniyor...
-                    echo.
-                    echo === Container Durumlari (ilk kontrol) ===
-                    docker-compose ps
-                    echo.
-                    echo Backend container\'inin başlaması için 120 saniye bekleniyor...
-                    ping 127.0.0.1 -n 121 > nul
-                    echo.
-                    echo === Container Durumlari (bekleme sonrasi) ===
-                    docker-compose ps
-                    echo.
-                    echo === Backend Loglari (SON 100 SATIR - CRASH VARSA GORUNUR) ===
-                    docker-compose logs --tail=100 banking-app 2>&1
-                    echo.
-                    echo === Frontend Loglari (son 20 satir) ===
-                    docker-compose logs --tail=20 frontend
-                '''
-            }
-        }
+       stage('Start Containers') {
+           steps {
+               echo 'Docker container\'lar başlatılıyor...'
+               bat '''
+                   docker-compose down -v
+                   docker-compose up -d
+                   echo.
+                   echo === Container Durumlari (ilk kontrol) ===
+                   docker-compose ps
+                   echo.
+                   echo Backend container'inin başlaması için kısa bekleme...
+                   ping 127.0.0.1 -n 31 > nul
+               '''
+           }
+       }
 
         stage('Health Check') {
             steps {

@@ -45,15 +45,23 @@ public class Test6_Transfer extends BaseSeleniumTest {
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
 
         // Kayıt mesajını bekle ve kontrol et
-        WebElement registerMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
+        WebElement registerMessage = wait
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
 
-        // Mesajın dolmasını bekle
+        // Mesajın dolmasını ve "yapılıyor" dışındaki nihai sonucu göstermesini bekle
         int regAttempts = 0;
         String regMessageText = "";
-        while (regAttempts < 20 && regMessageText.trim().isEmpty()) {
+        while (regAttempts < 40) { // 20 saniye kadar bekle
             regMessageText = registerMessage.getText().trim();
-            if (!regMessageText.isEmpty()) break;
-            try { Thread.sleep(500); } catch (InterruptedException e) { }
+            // Mesaj boş değilse VE "yapılıyor" içermiyorsa (yani success veya fail ise)
+            // döngüden çık
+            if (!regMessageText.isEmpty() && !regMessageText.toLowerCase().contains("yapılıyor")) {
+                break;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+            }
             regAttempts++;
         }
 
@@ -67,7 +75,10 @@ public class Test6_Transfer extends BaseSeleniumTest {
 
         System.out.println("✓ Kayıt başarılı: " + username);
 
-        try { Thread.sleep(3000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+        }
 
         // ========== LOGİN ==========
         try {
@@ -100,7 +111,8 @@ public class Test6_Transfer extends BaseSeleniumTest {
         try {
             // Önce presence, sonra visibility
             longWait.until(ExpectedConditions.presenceOfElementLocated(By.id("dashboard-section")));
-            WebElement dashboard = longWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard-section")));
+            WebElement dashboard = longWait
+                    .until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard-section")));
 
             System.out.println("✓ Dashboard yüklendi!");
 
@@ -127,7 +139,10 @@ public class Test6_Transfer extends BaseSeleniumTest {
             throw new RuntimeException("Dashboard yüklenemedi - Login başarısız olabilir", e);
         }
 
-        try { Thread.sleep(2000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+        }
 
         // ========== HESAP OLUŞTURMA ==========
         WebElement accountTypeSelect = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("accountType")));
@@ -138,22 +153,32 @@ public class Test6_Transfer extends BaseSeleniumTest {
         WebElement createAccountButton = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//button[contains(text(), 'Hesap Oluştur')]")));
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", createAccountButton);
-        try { Thread.sleep(2000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+        }
 
         // 2. Hesap (SAVINGS)
         accountSelect.selectByValue("SAVINGS");
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", createAccountButton);
-        try { Thread.sleep(2000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+        }
 
         // ========== PARA YATIRMA ==========
         WebElement depositTab = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//button[contains(text(), 'Para Yatır')]")));
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", depositTab);
-        try { Thread.sleep(1000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
 
         WebElement depositAccount = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("depositAccount")));
         Select depositSelect = new Select(depositAccount);
-        if (depositSelect.getOptions().size() > 0) depositSelect.selectByIndex(0);
+        if (depositSelect.getOptions().size() > 0)
+            depositSelect.selectByIndex(0);
 
         driver.findElement(By.id("depositAmount")).clear();
         driver.findElement(By.id("depositAmount")).sendKeys("200.00");
@@ -164,19 +189,26 @@ public class Test6_Transfer extends BaseSeleniumTest {
                 By.xpath("//div[@id='deposit-tab']//button[contains(text(), 'Para Yatır')]")));
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", depositButton);
         System.out.println("✓ Para yatırıldı: 200 TL");
-        try { Thread.sleep(3000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+        }
 
         // Eski mesajı temizle
         try {
             WebElement oldMessage = driver.findElement(By.id("transactionMessage"));
             ((JavascriptExecutor) driver).executeScript("arguments[0].textContent = '';", oldMessage);
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
 
         // ========== TRANSFER ==========
         WebElement transferTab = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//button[contains(text(), 'Transfer')]")));
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", transferTab);
-        try { Thread.sleep(1000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
 
         WebElement fromAccount = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("transferFromAccount")));
         Select fromSelect = new Select(fromAccount);
@@ -196,18 +228,26 @@ public class Test6_Transfer extends BaseSeleniumTest {
                     By.xpath("//div[@id='transfer-tab']//button[contains(text(), 'Transfer Et')]")));
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", transferButton);
             System.out.println("✓ Transfer butonuna tıklandı");
-            try { Thread.sleep(4000); } catch (InterruptedException e) { }
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+            }
 
             // Mesaj kontrolü (timeout korumalı)
             try {
-                WebElement message = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("transactionMessage")));
+                WebElement message = wait
+                        .until(ExpectedConditions.presenceOfElementLocated(By.id("transactionMessage")));
 
                 int attempts = 0;
                 String messageText = "";
                 while (attempts < 10 && messageText.trim().isEmpty()) {
                     messageText = message.getText().trim();
-                    if (!messageText.isEmpty()) break;
-                    try { Thread.sleep(500); } catch (InterruptedException e) { }
+                    if (!messageText.isEmpty())
+                        break;
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                    }
                     attempts++;
                 }
 
@@ -219,8 +259,8 @@ public class Test6_Transfer extends BaseSeleniumTest {
                     assertTrue(true, "Mesaj boş ama backend işlemi muhtemelen başarılı");
                 } else {
                     assertTrue(messageText.toLowerCase().contains("başarı") ||
-                                    messageText.toLowerCase().contains("transfer") ||
-                                    messageText.toLowerCase().contains("success"),
+                            messageText.toLowerCase().contains("transfer") ||
+                            messageText.toLowerCase().contains("success"),
                             "Transfer işlemi başarısız. Mesaj: [" + messageText + "]");
                 }
             } catch (org.openqa.selenium.TimeoutException e) {
