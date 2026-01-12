@@ -283,6 +283,8 @@ public class Test6_Transfer extends BaseSeleniumTest {
                 System.out.println("⚠ Element timeout ama test geçiyor");
                 assertTrue(true, "Element timeout ama backend işlemi muhtemelen çalıştı");
             }
+
+
         } else {
             System.out.println("⚠ Birden fazla hesap yok, transfer atlanıyor");
             assertTrue(true, "Transfer için yeterli hesap yok");
