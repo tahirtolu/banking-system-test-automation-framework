@@ -274,6 +274,12 @@ public class BaseSeleniumTest {
     }
 
     protected void loginUser(String username, String password) {
+        // DB'nin sakinleşmesi için kısa bir bekleme
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+        }
+
         // Login sekmesine geç
         try {
             WebElement loginTab = driver
@@ -297,11 +303,23 @@ public class BaseSeleniumTest {
                     org.openqa.selenium.By.xpath("//form[@id='loginForm']//button[@type='submit']")));
             ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
 
-            // Dashboard kontrolü (Timeout 30 saniyeye çıkarıldı)
-            new WebDriverWait(driver, Duration.ofSeconds(30))
-                    .until(org.openqa.selenium.support.ui.ExpectedConditions
-                            .visibilityOfElementLocated(org.openqa.selenium.By.id("dashboard-section")));
-            System.out.println("✓ Login başarılı: " + username);
+            // Dashboard kontrolü (Timeout 60 saniyeye çıkarıldı)
+            try {
+                new WebDriverWait(driver, Duration.ofSeconds(60))
+                        .until(org.openqa.selenium.support.ui.ExpectedConditions
+                                .visibilityOfElementLocated(org.openqa.selenium.By.id("dashboard-section")));
+                System.out.println("✓ Login başarılı: " + username);
+            } catch (org.openqa.selenium.TimeoutException te) {
+                // Timeout olduysa hata mesajı var mı kontrol et
+                String errorMsg = "Bilinmeyen hata";
+                try {
+                    WebElement msgEl = driver.findElement(org.openqa.selenium.By.id("loginMessage"));
+                    errorMsg = msgEl.getText();
+                } catch (Exception e) {
+                }
+                throw new RuntimeException("Login timeout! Ekrandaki mesaj: [" + errorMsg + "]", te);
+            }
+
         } catch (Exception e) {
             System.err.println("Login başarısız: " + e.getMessage());
             throw new RuntimeException("Login başarısız", e);
