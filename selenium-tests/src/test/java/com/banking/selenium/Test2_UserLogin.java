@@ -42,101 +42,21 @@ public class Test2_UserLogin extends BaseSeleniumTest {
 
     @Test
     public void testUserLogin() {
-        waitForBackend();  // Backend'i bekle (BaseSeleniumTest'teki static metod)
+        waitForBackend();
 
-        // Önce kullanıcı kaydı yap (testuser kullanıcısı yoksa)
-        driver.get(FRONTEND_URL);
-
-        // Kayıt sekmesine geç
-        WebElement registerTab = wait.until(ExpectedConditions.elementToBeClickable(
-            By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
-        registerTab.click();
-
-        // Kullanıcı kaydı formunu doldur
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("regUsername")));
         long timestamp = System.currentTimeMillis();
-        String username = "testuser";  // Sabit kullanıcı adı (Test2 için)
-        String email = "testuser" + timestamp + "@test.com";  // Unique email
-        
-        driver.findElement(By.id("regUsername")).sendKeys(username);
-        driver.findElement(By.id("regPassword")).sendKeys("password123");
-        driver.findElement(By.id("regEmail")).sendKeys(email);
-        driver.findElement(By.id("regFirstName")).sendKeys("Test");
-        driver.findElement(By.id("regLastName")).sendKeys("User");
-        driver.findElement(By.id("regPhone")).sendKeys("5551234567");
+        String username = "testuser";
+        String email = "testuser" + timestamp + "@test.com";
 
-        System.out.println("✓ Kullanıcı kaydı yapılıyor: " + username);
+        System.out.println("=== Test2: Kullanıcı Girişi Başlıyor ===");
 
-        // Kayıt butonuna tıkla (JavaScript click)
-        WebElement registerButton = wait.until(ExpectedConditions.elementToBeClickable(
-            By.xpath("//form[@id='registerForm']//button[@type='submit']")));
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
+        // 1. Kayıt Ol (Setup - Robust)
+        String registeredUser = registerUser(username, "password123", email, "Test", "User", "5551234567");
 
-        // Kayıt işleminin tamamlanması için bekle
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // 2. Giriş Yap (Test Edilen İşlem - Robust)
+        loginUser(registeredUser, "password123");
 
-        // Kayıt mesajını kontrol et (opsiyonel - hata olsa bile devam et)
-        try {
-            WebElement registerMessage = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("registerMessage")));
-            String registerMsg = registerMessage.getText().trim();
-            System.out.println("Kayıt mesajı: [" + registerMsg + "]");
-        } catch (Exception e) {
-            System.out.println("Kayıt mesajı kontrol edilemedi (devam ediliyor)");
-        }
-
-        // Giriş sekmesine geç
-        WebElement loginTab = wait.until(ExpectedConditions.elementToBeClickable(
-            By.xpath("//button[contains(text(), 'Giriş Yap')]")));
-        loginTab.click();
-
-        // Giriş formunu doldur
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("loginUsername")));
-        driver.findElement(By.id("loginUsername")).clear();
-        driver.findElement(By.id("loginUsername")).sendKeys(username);
-        driver.findElement(By.id("loginPassword")).clear();
-        driver.findElement(By.id("loginPassword")).sendKeys("password123");
-
-        System.out.println("✓ Giriş formu dolduruldu: " + username);
-
-        // Giriş butonuna tıkla (JavaScript click)
-        WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(
-            By.xpath("//form[@id='loginForm']//button[@type='submit']")));
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
-
-        // API isteğinin tamamlanması için bekle
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        // Login mesajını kontrol et (hata durumunda)
-        try {
-            WebElement loginMessage = driver.findElement(By.id("loginMessage"));
-            String loginMsg = loginMessage.getText().trim();
-            if (!loginMsg.isEmpty()) {
-                System.out.println("Login mesajı: [" + loginMsg + "]");
-            }
-        } catch (Exception e) {
-            // Mesaj yoksa sorun değil
-        }
-
-        // Dashboard'un göründüğünü kontrol et
-        WebElement dashboard = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("dashboard-section")));
-        String displayStyle = dashboard.getCssValue("display");
-        
-        System.out.println("\n=== SONUÇ ===");
-        System.out.println("Dashboard display style: [" + displayStyle + "]");
-        System.out.println("Dashboard isDisplayed: [" + dashboard.isDisplayed() + "]");
-        
-        assertTrue(dashboard.isDisplayed() && !displayStyle.equals("none"), 
-            "Giriş başarısız - Dashboard görünmüyor");
-        
-        System.out.println("✓ Giriş başarılı - Dashboard görünüyor!");
+        // Assertions loginUser içinde yapılıyor (Dashboard kontrolü)
+        assertTrue(true, "Login başarılı (BaseSeleniumTest.loginUser kontrol etti)");
     }
 }
-

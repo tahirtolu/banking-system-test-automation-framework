@@ -19,52 +19,22 @@ public class Test5_Withdrawal extends BaseSeleniumTest {
 
         System.out.println("=== Test5: Para Çekme Başlıyor ===");
 
-        driver.get(FRONTEND_URL);
-
-        WebElement registerTab = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
-        registerTab.click();
-
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("regUsername")));
+        System.out.println("=== Test5: Para Çekme Başlıyor ===");
 
         long timestamp = System.currentTimeMillis();
         String username = "test" + (timestamp % 100000);
         String password = "password123";
         String email = "test" + timestamp + "@test.com";
 
-        driver.findElement(By.id("regUsername")).sendKeys(username);
-        driver.findElement(By.id("regPassword")).sendKeys(password);
-        driver.findElement(By.id("regEmail")).sendKeys(email);
-        driver.findElement(By.id("regFirstName")).sendKeys("Test");
-        driver.findElement(By.id("regLastName")).sendKeys("User");
-        driver.findElement(By.id("regPhone")).sendKeys("5551234567");
+        // Setup: Robust Register & Login
+        String registeredUser = registerUser(username, password, email, "Test", "User", "5551234567");
+        loginUser(registeredUser, password);
 
-        WebElement registerButton = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//form[@id='registerForm']//button[@type='submit']")));
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
-
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
-        try { Thread.sleep(2000); } catch (InterruptedException e) { }
-
-        // Login
+        System.out.println("✓ Setup tamamlandı");
         try {
-            WebElement loginTab = driver.findElement(By.xpath("//button[contains(text(), 'Giriş Yap')]"));
-            if (loginTab.isDisplayed()) loginTab.click();
-        } catch (Exception e) { }
-
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("loginUsername")));
-        driver.findElement(By.id("loginUsername")).clear();
-        driver.findElement(By.id("loginUsername")).sendKeys(username);
-        driver.findElement(By.id("loginPassword")).clear();
-        driver.findElement(By.id("loginPassword")).sendKeys(password);
-
-        WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//form[@id='loginForm']//button[@type='submit']")));
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
-
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard-section")));
-        System.out.println("✓ Dashboard yüklendi");
-        try { Thread.sleep(1000); } catch (InterruptedException e) { }
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
 
         // Hesap oluştur
         WebElement accountTypeSelect = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("accountType")));
@@ -75,18 +45,25 @@ public class Test5_Withdrawal extends BaseSeleniumTest {
                 By.xpath("//button[contains(text(), 'Hesap Oluştur')]")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", createAccountButton);
         System.out.println("✓ Hesap oluşturuldu");
-        try { Thread.sleep(2000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+        }
 
         // Para yatır
         WebElement depositTab = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//button[contains(text(), 'Para Yatır')]")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", depositTab);
         System.out.println("✓ Para Yatır sekmesine geçildi");
-        try { Thread.sleep(1000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
 
         WebElement depositAccount = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("depositAccount")));
         Select depositSelect = new Select(depositAccount);
-        if (depositSelect.getOptions().size() > 0) depositSelect.selectByIndex(0);
+        if (depositSelect.getOptions().size() > 0)
+            depositSelect.selectByIndex(0);
 
         driver.findElement(By.id("depositAmount")).clear();
         driver.findElement(By.id("depositAmount")).sendKeys("100.00");
@@ -97,7 +74,10 @@ public class Test5_Withdrawal extends BaseSeleniumTest {
                 By.xpath("//div[@id='deposit-tab']//button[contains(text(), 'Para Yatır')]")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", depositButton);
         System.out.println("✓ Para yatırıldı: 100.00 TL");
-        try { Thread.sleep(3000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+        }
 
         // Para çekme mesajını temizle (eğer varsa)
         try {
@@ -113,12 +93,16 @@ public class Test5_Withdrawal extends BaseSeleniumTest {
                 By.xpath("//button[contains(text(), 'Para Çek')]")));
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", withdrawTab);
         System.out.println("✓ Para Çek sekmesine geçildi");
-        try { Thread.sleep(1000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
 
         // Para çek formu
         WebElement withdrawAccount = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("withdrawAccount")));
         Select withdrawSelect = new Select(withdrawAccount);
-        if (withdrawSelect.getOptions().size() > 0) withdrawSelect.selectByIndex(0);
+        if (withdrawSelect.getOptions().size() > 0)
+            withdrawSelect.selectByIndex(0);
 
         driver.findElement(By.id("withdrawAmount")).clear();
         driver.findElement(By.id("withdrawAmount")).sendKeys("50.00");
@@ -134,7 +118,10 @@ public class Test5_Withdrawal extends BaseSeleniumTest {
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", withdrawButton);
 
         // Daha uzun bekleme
-        try { Thread.sleep(4000); } catch (InterruptedException e) { }
+        try {
+            Thread.sleep(4000);
+        } catch (InterruptedException e) {
+        }
 
         // Mesaj kontrolü - daha esnek
         try {
@@ -145,8 +132,12 @@ public class Test5_Withdrawal extends BaseSeleniumTest {
             String messageText = "";
             while (attempts < 10 && messageText.trim().isEmpty()) {
                 messageText = message.getText().trim();
-                if (!messageText.isEmpty()) break;
-                try { Thread.sleep(500); } catch (InterruptedException e) { }
+                if (!messageText.isEmpty())
+                    break;
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                }
                 attempts++;
             }
 
@@ -160,8 +151,7 @@ public class Test5_Withdrawal extends BaseSeleniumTest {
                 // JavaScript console hatalarını kontrol et
                 System.out.println("Console logs:");
                 try {
-                    driver.manage().logs().get("browser").forEach(entry ->
-                            System.out.println(entry));
+                    driver.manage().logs().get("browser").forEach(entry -> System.out.println(entry));
                 } catch (Exception e) {
                     System.out.println("Console logs alınamadı");
                 }
@@ -171,8 +161,8 @@ public class Test5_Withdrawal extends BaseSeleniumTest {
                 assertTrue(true, "Mesaj boş ama backend işlemi muhtemelen başarılı");
             } else {
                 assertTrue(messageText.toLowerCase().contains("başarı") ||
-                                messageText.toLowerCase().contains("çekme") ||
-                                messageText.toLowerCase().contains("success"),
+                        messageText.toLowerCase().contains("çekme") ||
+                        messageText.toLowerCase().contains("success"),
                         "Para çekme işlemi başarısız. Mesaj: [" + messageText + "]");
             }
         } catch (org.openqa.selenium.TimeoutException e) {
@@ -185,6 +175,5 @@ public class Test5_Withdrawal extends BaseSeleniumTest {
             assertTrue(true, "Element timeout ama backend işlemi muhtemelen çalıştı");
         }
     }
-
 
 }

@@ -25,10 +25,10 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
     private final DataSource dataSource;
-    
+
     @PersistenceContext
     private EntityManager entityManager;
-    
+
     /**
      * Veritabanı tipini kontrol eder (SQLite için native SQL, H2 için normal save)
      */
@@ -66,25 +66,27 @@ public class AccountService {
             try {
                 // Flush any pending changes before native query
                 entityManager.flush();
-                
+
                 // Use native SQL INSERT to avoid getGeneratedKeys() issue
-                String insertSql = "INSERT INTO accounts (account_number, balance, account_type, created_at, user_id) " +
+                String insertSql = "INSERT INTO accounts (account_number, balance, account_type, created_at, user_id) "
+                        +
                         "VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
-                
+
                 entityManager.createNativeQuery(insertSql)
                         .setParameter(1, account.getAccountNumber())
                         .setParameter(2, account.getBalance())
                         .setParameter(3, account.getAccountType().name())
                         .setParameter(4, user.getId())
                         .executeUpdate();
-                
-                // Flush to ensure INSERT is committed to database before querying last_insert_rowid()
+
+                // Flush to ensure INSERT is committed to database before querying
+                // last_insert_rowid()
                 entityManager.flush();
-                
+
                 // Get the last inserted ID using SQLite's last_insert_rowid()
                 Long id = ((Number) entityManager.createNativeQuery("SELECT last_insert_rowid()")
                         .getSingleResult()).longValue();
-                
+
                 // Query the saved account with ID
                 account = accountRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("Hesap kaydedilemedi - ID alınamadı"));
@@ -130,6 +132,7 @@ public class AccountService {
         dto.setAccountType(account.getAccountType());
         dto.setCreatedAt(account.getCreatedAt());
         dto.setUserId(account.getUser().getId());
+        dto.setFullName(account.getUser().getFirstName() + " " + account.getUser().getLastName());
         return dto;
     }
 
@@ -138,4 +141,3 @@ public class AccountService {
         return String.format("%010d", random.nextInt(1000000000));
     }
 }
-

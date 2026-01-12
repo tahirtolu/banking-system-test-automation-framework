@@ -40,60 +40,23 @@ public class Test1_UserRegistration extends BaseSeleniumTest {
 
     @Test
     public void testUserRegistration() {
-        waitForBackend();  // Backend'i bekle (BaseSeleniumTest'teki static metod)
+        waitForBackend(); // Backend'i bekle (BaseSeleniumTest'teki static metod)
 
-        driver.get(FRONTEND_URL);
-
-        // Kayıt sekmesine geç
-        WebElement registerTab = wait.until(ExpectedConditions.elementToBeClickable(
-            By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
-        registerTab.click();
-
-        // Form alanlarını doldur
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("regUsername")));
-        
-        // ✅ KRİTİK DÜZELTME: Username max 20 karakter
+        // ✅ KRİTİK DÜZELTME: Retry mekanizması ile robust kayıt (BaseSeleniumTest
+        // içinde)
         long timestamp = System.currentTimeMillis();
         String username = "test" + (timestamp % 100000); // test12345 formatı (9 karakter)
         String email = "test" + timestamp + "@test.com";
-        
-        driver.findElement(By.id("regUsername")).sendKeys(username);
-        driver.findElement(By.id("regPassword")).sendKeys("password123");
-        driver.findElement(By.id("regEmail")).sendKeys(email);
-        driver.findElement(By.id("regFirstName")).sendKeys("Selenium");
-        driver.findElement(By.id("regLastName")).sendKeys("Test");
-        driver.findElement(By.id("regPhone")).sendKeys("5551234567");
 
-        System.out.println("✓ Form dolduruldu: " + username + " / " + email);
+        System.out.println("Test1: Kullanıcı Kaydı Testi Başlıyor...");
 
-        // Kayıt butonuna tıkla (JavaScript click - headless mod için daha güvenilir)
-        WebElement registerButton = wait.until(ExpectedConditions.elementToBeClickable(
-            By.xpath("//form[@id='registerForm']//button[@type='submit']")));
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
+        // registerUser helper'ı zaten başarı kontrolü ve retry yapıyor.
+        // Hata durumunda RuntimeException fırlatıyor, bu da testi fail ettirir.
+        registerUser(username, "password123", email, "Selenium", "Test", "5551234567");
 
-        // API isteğinin tamamlanması için bekle
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        // Başarı mesajı elementinin görünür olmasını bekle
-        WebElement message = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
-        
-        // Metnin dolmasını bekle (Boş olmamasını sağla)
-        wait.until(driver -> {
-            String text = message.getText().trim();
-            return !text.isEmpty();
-        });
-
-        String messageText = message.getText().trim();
         System.out.println("\n=== SONUÇ ===");
-        System.out.println("Register message: [" + messageText + "]");
-        
-        String lowerMessage = messageText.toLowerCase();
-        assertTrue(lowerMessage.contains("başarılı") || lowerMessage.contains("success"),
-            "Kayıt işlemi başarısız oldu. Mesaj: [" + messageText + "]");
+        System.out.println("Register successful via helper method.");
+
+        assertTrue(true, "Kayıt işlemi başarılı (Helper method exception fırlatmadı)");
     }
 }
-

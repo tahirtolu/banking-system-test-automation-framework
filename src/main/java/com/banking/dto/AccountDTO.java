@@ -13,5 +13,5 @@ public class AccountDTO {
     private Account.AccountType accountType;
     private LocalDateTime createdAt;
     private Long userId;
+    private String fullName;
 }
-

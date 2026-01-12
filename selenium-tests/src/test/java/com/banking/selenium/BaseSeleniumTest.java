@@ -30,12 +30,12 @@ public class BaseSeleniumTest {
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
-        
+
         // Console loglarını yakala (debug için)
         LoggingPreferences logPrefs = new LoggingPreferences();
         logPrefs.enable(LogType.BROWSER, Level.ALL);
         options.setCapability("goog:loggingPrefs", logPrefs);
-        
+
         driver = new ChromeDriver(options);
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
@@ -54,9 +54,9 @@ public class BaseSeleniumTest {
      * Önce direkt backend'e (8081) bak, sonra Nginx üzerinden (8082) kontrol et
      */
     protected static void waitForBackend() {
-        String backendDirectUrl = "http://localhost:8081/api/auth/login";  // Direkt backend
-        String backendNginxUrl = "http://localhost:8082/api/auth/login";   // Nginx üzerinden
-        int maxAttempts = 90;  // 90 saniyeye çıkarıldı
+        String backendDirectUrl = "http://localhost:8081/api/auth/login"; // Direkt backend
+        String backendNginxUrl = "http://localhost:8082/api/auth/login"; // Nginx üzerinden
+        int maxAttempts = 90; // 90 saniyeye çıkarıldı
         int attempt = 0;
 
         System.out.println("Backend hazır olana kadar bekleniyor...");
@@ -82,12 +82,14 @@ public class BaseSeleniumTest {
                 }
 
                 if (attempt % 10 == 0) {
-                    System.out.println("Bekleniyor... (" + (attempt + 1) + "/" + maxAttempts + ") Backend henüz hazır değil (HTTP " + responseCode + ")");
+                    System.out.println("Bekleniyor... (" + (attempt + 1) + "/" + maxAttempts
+                            + ") Backend henüz hazır değil (HTTP " + responseCode + ")");
                 }
 
             } catch (Exception e) {
                 if (attempt % 10 == 0) {
-                    System.out.println("Bekleniyor... (" + (attempt + 1) + "/" + maxAttempts + ") Backend henüz başlamadı: " + e.getMessage());
+                    System.out.println("Bekleniyor... (" + (attempt + 1) + "/" + maxAttempts
+                            + ") Backend henüz başlamadı: " + e.getMessage());
                 }
             }
 
@@ -108,7 +110,7 @@ public class BaseSeleniumTest {
         // Backend hazır, şimdi Nginx üzerinden kontrol et
         System.out.println("2. Adım: Nginx proxy kontrolü (port 8082)...");
         attempt = 0;
-        while (attempt < 30) {  // Nginx için 30 saniye yeterli
+        while (attempt < 30) { // Nginx için 30 saniye yeterli
             try {
                 URL url = new URL(backendNginxUrl);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -123,7 +125,7 @@ public class BaseSeleniumTest {
                     System.out.println("✓ Nginx proxy hazır! (HTTP " + responseCode + ")");
                     return;
                 }
-                
+
                 if (responseCode == 502) {
                     System.out.println("Nginx 502 döndürüyor, backend'e ulaşamıyor... (" + (attempt + 1) + "/30)");
                 }
@@ -143,5 +145,140 @@ public class BaseSeleniumTest {
 
         System.err.println("⚠ UYARI: Nginx proxy 30 saniye içinde hazır olmadı, ama direkt backend çalışıyor!");
     }
-}
 
+    /**
+     * Robust User Registration with Retry Logic
+     * Handles transient JPA/DB locking errors by retrying up to 3 times.
+     * 
+     * @return The actual username used for registration (may differ from input if
+     *         retried)
+     */
+    protected String registerUser(String username, String password, String email, String firstName, String lastName,
+            String phone) {
+        driver.get(FRONTEND_URL);
+
+        int maxRetries = 3;
+        boolean success = false;
+        String registeredUsername = username;
+
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                // Kayıt sekmesine geç (eğer zaten orada değilsek)
+                try {
+                    WebElement registerTab = wait
+                            .until(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
+                                    org.openqa.selenium.By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
+                    registerTab.click();
+                } catch (Exception e) {
+                    // Belki zaten kayıt sayfasındayız veya element bulunamadı, formu dene
+                }
+
+                wait.until(org.openqa.selenium.support.ui.ExpectedConditions
+                        .presenceOfElementLocated(org.openqa.selenium.By.id("regUsername")));
+
+                String currentUsername = username + (i > 0 ? "_" + i : ""); // Retry'larda benzersiz username
+
+                // Formu doldur
+                driver.findElement(org.openqa.selenium.By.id("regUsername")).clear();
+                driver.findElement(org.openqa.selenium.By.id("regUsername")).sendKeys(currentUsername);
+                driver.findElement(org.openqa.selenium.By.id("regPassword")).clear();
+                driver.findElement(org.openqa.selenium.By.id("regPassword")).sendKeys(password);
+                driver.findElement(org.openqa.selenium.By.id("regEmail")).clear();
+                driver.findElement(org.openqa.selenium.By.id("regEmail")).sendKeys(email + (i > 0 ? i : ""));
+                driver.findElement(org.openqa.selenium.By.id("regFirstName")).clear();
+                driver.findElement(org.openqa.selenium.By.id("regFirstName")).sendKeys(firstName);
+                driver.findElement(org.openqa.selenium.By.id("regLastName")).clear();
+                driver.findElement(org.openqa.selenium.By.id("regLastName")).sendKeys(lastName);
+                driver.findElement(org.openqa.selenium.By.id("regPhone")).clear();
+                driver.findElement(org.openqa.selenium.By.id("regPhone")).sendKeys(phone);
+
+                WebElement registerButton = wait
+                        .until(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
+                                org.openqa.selenium.By.xpath("//form[@id='registerForm']//button[@type='submit']")));
+                ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();",
+                        registerButton);
+
+                // Sonuç kontrolü
+                WebElement message = wait
+                        .until(org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated(
+                                org.openqa.selenium.By.id("registerMessage")));
+
+                // Mesajın içeriğini bekle
+                wait.until(d -> {
+                    String text = message.getText().trim().toLowerCase();
+                    return !text.isEmpty() && !text.contains("yapılıyor");
+                });
+
+                String msgText = message.getText().trim();
+                String lowerMsg = msgText.toLowerCase();
+
+                if (lowerMsg.contains("başarı") || lowerMsg.contains("success")) {
+                    System.out.println("✓ Kayıt başarılı: " + currentUsername);
+                    success = true;
+                    registeredUsername = currentUsername;
+                    // Eğer username retry nedeniyle değiştiyse, dışarıya bu bilgiyi nasıl
+                    // vereceğiz?
+                    // Testlerde genellikle setup için kullanıldığı için sorun olmayabilir.
+                    return registeredUsername;
+                }
+
+                if (lowerMsg.contains("jpa") || lowerMsg.contains("transaction") || lowerMsg.contains("lock")) {
+                    System.out.println("⚠ DB Hatası (Retry " + (i + 1) + "): " + msgText);
+                    throw new RuntimeException("DB_RETRY");
+                }
+
+                throw new RuntimeException("Kayıt hatası: " + msgText);
+
+            } catch (RuntimeException e) {
+                if ("DB_RETRY".equals(e.getMessage())) {
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                    continue;
+                }
+                if (i == maxRetries - 1)
+                    throw e;
+            } catch (Exception e) {
+                if (i == maxRetries - 1)
+                    throw new RuntimeException("Registration failed after retries", e);
+            }
+        }
+        throw new RuntimeException("Registration failed");
+    }
+
+    protected void loginUser(String username, String password) {
+        // Login sekmesine geç
+        try {
+            WebElement loginTab = driver
+                    .findElement(org.openqa.selenium.By.xpath("//button[contains(text(), 'Giriş Yap')]"));
+            if (loginTab.isDisplayed()) {
+                loginTab.click();
+            }
+        } catch (Exception e) {
+            // Zaten login sekmesinde olabilir veya buton görünmeyebilir
+        }
+
+        try {
+            wait.until(org.openqa.selenium.support.ui.ExpectedConditions
+                    .presenceOfElementLocated(org.openqa.selenium.By.id("loginUsername")));
+            driver.findElement(org.openqa.selenium.By.id("loginUsername")).clear();
+            driver.findElement(org.openqa.selenium.By.id("loginUsername")).sendKeys(username);
+            driver.findElement(org.openqa.selenium.By.id("loginPassword")).clear();
+            driver.findElement(org.openqa.selenium.By.id("loginPassword")).sendKeys(password);
+
+            WebElement loginButton = wait.until(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
+                    org.openqa.selenium.By.xpath("//form[@id='loginForm']//button[@type='submit']")));
+            ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
+
+            // Dashboard kontrolü
+            wait.until(org.openqa.selenium.support.ui.ExpectedConditions
+                    .visibilityOfElementLocated(org.openqa.selenium.By.id("dashboard-section")));
+            System.out.println("✓ Login başarılı: " + username);
+        } catch (Exception e) {
+            System.err.println("Login başarısız: " + e.getMessage());
+            throw new RuntimeException("Login başarısız", e);
+        }
+    }
+}

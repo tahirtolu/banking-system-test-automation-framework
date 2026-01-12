@@ -20,12 +20,21 @@ public class DatabaseConfig {
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metaData = connection.getMetaData();
             String databaseProductName = metaData.getDatabaseProductName().toLowerCase();
-            
+
             // Sadece SQLite için PRAGMA foreign_keys = ON; çalıştır
             if (databaseProductName.contains("sqlite")) {
                 try (Statement statement = connection.createStatement()) {
+                    // Enable Foreign Keys
                     statement.execute("PRAGMA foreign_keys = ON;");
-                    System.out.println("✓ SQLite foreign keys enabled");
+
+                    // Enable Write-Ahead Logging (WAL) for concurrency (Readers don't block
+                    // Writers)
+                    statement.execute("PRAGMA journal_mode = WAL;");
+
+                    // Set synchronous to NORMAL for better performance in WAL mode
+                    statement.execute("PRAGMA synchronous = NORMAL;");
+
+                    System.out.println("✓ SQLite optimization enabled (WAL + Foreign Keys)");
                 }
             } else {
                 System.out.println("✓ Database: " + databaseProductName + " (foreign keys handled by database)");
@@ -35,4 +44,3 @@ public class DatabaseConfig {
         }
     }
 }
-

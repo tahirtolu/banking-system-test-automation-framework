@@ -29,7 +29,7 @@ public class AccountController {
             String username = authentication.getName();
             Long userId = userService.findByUsername(username).getId();
             Account account = accountService.createAccount(userId, accountType);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Hesap başarıyla oluşturuldu");
             response.put("accountNumber", account.getAccountNumber());
@@ -63,5 +63,5 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
-}
 
+}

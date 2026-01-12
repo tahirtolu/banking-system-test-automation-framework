@@ -105,7 +105,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
@@ -143,7 +143,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
         console.log('Parsed data:', data);
         console.log('Response OK?', response.ok);
         console.log('Response status:', response.status);
-        
+
         if (response.ok || response.status === 201) {
             console.log('✅ Registration successful!');
             showMessage('registerMessage', '✅ Kayıt başarılı! Giriş yapabilirsiniz.', 'success');
@@ -157,7 +157,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     } catch (error) {
         console.error('Register error:', error);
         console.error('API URL:', `${API_BASE_URL}/auth/register`);
-        
+
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             showMessage('registerMessage', `❌ Backend'e bağlanılamıyor!\n\nLütfen kontrol edin:\n1. Backend çalışıyor mu? (http://localhost:8081)\n2. Tarayıcı konsolunu açın (F12) ve hataları kontrol edin\n3. API URL: ${API_BASE_URL}`, 'error');
         } else if (error.message.includes('JSON')) {
@@ -231,7 +231,7 @@ function updateAccountSelects() {
     const selects = ['depositAccount', 'withdrawAccount', 'transferFromAccount', 'historyAccount'];
     selects.forEach(selectId => {
         const select = document.getElementById(selectId);
-        select.innerHTML = currentAccounts.map(acc => 
+        select.innerHTML = currentAccounts.map(acc =>
             `<option value="${acc.accountNumber}">${acc.accountNumber} - ${acc.balance.toFixed(2)} TL</option>`
         ).join('');
     });
@@ -243,7 +243,7 @@ async function createAccount() {
     accountMessageEl.innerHTML = '<div class="loading">Hesap oluşturuluyor</div>';
     accountMessageEl.className = 'message loading';
     accountMessageEl.style.display = 'block';
-    
+
     try {
         const response = await fetch(`${API_BASE_URL}/accounts?accountType=${accountType}`, {
             method: 'POST',
@@ -367,10 +367,10 @@ async function loadTransactionHistory() {
         showMessage('transactionMessage', 'Lütfen bir hesap seçin', 'error');
         return;
     }
-    
+
     const historyDiv = document.getElementById('transactionHistory');
     historyDiv.innerHTML = '<div class="loading">İşlem geçmişi yükleniyor</div>';
-    
+
     try {
         const response = await fetch(`${API_BASE_URL}/transactions/${accountNumber}/history`, {
             headers: { 'Authorization': `Bearer ${currentToken}` }
@@ -440,8 +440,75 @@ function showMessage(elementId, message, type) {
 
 // Yeni yardımcı fonksiyonlar
 function viewAccountDetails(accountNumber) {
-    // Hesap detaylarını göster (gelecekte modal eklenebilir)
-    alert(`Hesap Detayları:\nHesap No: ${accountNumber}\nDetaylı bilgi için API çağrısı yapılabilir.`);
+    // Varsa eski modalı temizle
+    const existingModal = document.querySelector('.modal-overlay');
+    if (existingModal) existingModal.remove();
+
+    // Hesabı bul
+    const account = currentAccounts.find(acc => acc.accountNumber === accountNumber);
+    if (!account) return;
+
+    // Detayları Hazırla
+    const accountTypeTr = account.accountType === 'CHECKING' ? 'Vadesiz Mevduat Hesabı' : 'Vadeli Tasarruf Hesabı';
+    const balanceFormatted = parseFloat(account.balance).toFixed(2) + ' TL';
+    const dateFormatted = new Date(account.createdAt).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Sanal IBAN Üretimi (TR + BankaKodu + Sube + HesapNo)
+    const iban = `TR33 0006 1024 0000 ${accountNumber}`;
+    const fullName = account.fullName || document.getElementById('usernameDisplay').textContent; // Fallback to username if fullName missing
+
+    // Yeni modal oluştur
+    const modalHtml = `
+        <div class="modal-overlay active">
+            <div class="modal-content" style="max-width: 500px; text-align: left;">
+                <h3 class="modal-title" style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+                    🏦 Hesap Detayları
+                </h3>
+                <div class="modal-body" style="display: grid; gap: 15px; font-size: 1.1em;">
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px;">
+                        <small style="color: var(--text-muted); display: block;">Hesap Sahibi</small>
+                        <strong style="color: var(--primary-color); font-size: 1.2em;">${fullName.toUpperCase()}</strong>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <small style="color: var(--text-muted);">Hesap Tipi</small>
+                            <div style="font-weight: 500;">${accountTypeTr}</div>
+                        </div>
+                        <div>
+                            <small style="color: var(--text-muted);">Bakiye</small>
+                            <div style="font-weight: 500; color: var(--success-color);">${balanceFormatted}</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <small style="color: var(--text-muted);">IBAN</small>
+                        <div style="font-family: monospace; letter-spacing: 1px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 5px;">
+                            ${iban}
+                        </div>
+                    </div>
+
+                    <div>
+                         <small style="color: var(--text-muted);">Açılış Tarihi</small>
+                         <div>📅 ${dateFormatted}</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="modal-btn" onclick="closeModal()" style="width: 100%;">Kapat</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeModal() {
+    const modal = document.querySelector('.modal-overlay');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    }
 }
 
 function selectAccountForTransaction(accountNumber) {
