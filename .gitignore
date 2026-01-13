@@ -44,4 +44,5 @@ screenshots/
 *.md
 # ...ama README.md dosyasını gönder (istisna)
 !README.md
+!TestSenaryosu.md
 
