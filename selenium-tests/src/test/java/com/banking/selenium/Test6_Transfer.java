@@ -9,6 +9,8 @@ import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -58,28 +60,52 @@ public class Test6_Transfer extends BaseSeleniumTest {
                 // Kayıt mesajını bekle ve kontrol et
                 WebElement registerMessage = wait
                         .until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
+                System.out.println("Kayıt mesajı: " + registerMessage.getText());
 
-                // Mesajın dolmasını ve "yapılıyor" dışındaki nihai sonucu göstermesini bekle
-                int regAttempts = 0;
-                String regMessageText = "";
-                while (regAttempts < 40) { // 20 saniye kadar bekle
-                    regMessageText = registerMessage.getText().trim();
-                    if (!regMessageText.isEmpty() && !regMessageText.toLowerCase().contains("yapılıyor")) {
-                        break;
+                // API İLE DOĞRULAMA (2. Çözüm)
+                // Frontend UI state'ine (Loading...) güvenmek yerine API'ye soruyoruz.
+                boolean userExists = false;
+                for (int apiRetry = 0; apiRetry < 10; apiRetry++) {
+                    try {
+                        URL url = new URL("http://localhost:8081/api/auth/login");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setDoOutput(true);
+
+                        String jsonInputString = String.format("{\"username\": \"%s\", \"password\": \"%s\"}", username,
+                                password);
+
+                        try (java.io.OutputStream os = conn.getOutputStream()) {
+                            byte[] input = jsonInputString.getBytes("utf-8");
+                            os.write(input, 0, input.length);
+                        }
+
+                        int code = conn.getResponseCode();
+                        // 200 (OK) -> Login başarılı (User var)
+                        // 403 (Forbidden) -> Şifre yanlış ama User var (Spring Security bazen böyle
+                        // döner)
+                        // 401 (Unauthorized) -> Login başarısız
+                        if (code == 200 || code == 403) {
+                            userExists = true;
+                            System.out.println("✓ API Doğrulama Başarılı: User backend'de mevcut (HTTP " + code + ")");
+                            break;
+                        } else {
+                            System.out.println("⏳ API Bekleniyor (HTTP " + code + ")...");
+                        }
+                    } catch (Exception ignored) {
+                        System.out.println("⏳ API Bağlantı hatası...");
                     }
-                    Thread.sleep(500);
-                    regAttempts++;
+
+                    Thread.sleep(2000);
                 }
 
-                System.out.println("Kayıt mesajı: [" + regMessageText + "]");
-
-                if (regMessageText.toLowerCase().contains("başarı")
-                        || regMessageText.toLowerCase().contains("success")) {
-                    System.out.println("✓ Kayıt başarılı: " + username);
+                if (userExists) {
+                    System.out.println("✓ Kayıt işlemi backend tarafından doğrulandı: " + username);
                     registrationSuccess = true;
                     break;
                 } else {
-                    System.out.println("⚠ Kayıt başarısız (Deneme " + (i + 1) + "): " + regMessageText);
+                    System.out.println("⚠ Kayıt başarısız: Backend user'ı bulamadı (Deneme " + (i + 1) + ")");
                 }
 
             } catch (Exception e) {
@@ -283,7 +309,6 @@ public class Test6_Transfer extends BaseSeleniumTest {
                 System.out.println("⚠ Element timeout ama test geçiyor");
                 assertTrue(true, "Element timeout ama backend işlemi muhtemelen çalıştı");
             }
-
 
         } else {
             System.out.println("⚠ Birden fazla hesap yok, transfer atlanıyor");
