@@ -6,11 +6,6 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.time.Duration;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,172 +16,21 @@ public class Test6_Transfer extends BaseSeleniumTest {
         waitForBackend();
         System.out.println("=== Test6: Para Transferi Başlıyor ===");
 
-        driver.get(FRONTEND_URL);
-
-        // ========== KAYIT OLMA (RETRY LOGIC) ==========
-        String username = "";
+        long timestamp = System.currentTimeMillis();
         String password = "password123";
-        boolean registrationSuccess = false;
+        String username = "test" + (timestamp % 100000);
+        String email = "test" + timestamp + "@test.com";
 
-        for (int i = 0; i < 3; i++) {
-            try {
-                if (i > 0) {
-                    System.out.println("⚠ Kayıt retrying (" + (i + 1) + "/3)...");
-                    driver.navigate().refresh();
-                    Thread.sleep(2000);
-                }
-
-                WebElement registerTab = wait.until(ExpectedConditions.elementToBeClickable(
-                        By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
-                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", registerTab);
-
-                wait.until(ExpectedConditions.presenceOfElementLocated(By.id("regUsername")));
-
-                long timestamp = System.currentTimeMillis();
-                username = "test" + (timestamp % 100000);
-                String email = "test" + timestamp + "@test.com";
-
-                driver.findElement(By.id("regUsername")).sendKeys(username);
-                driver.findElement(By.id("regPassword")).sendKeys(password);
-                driver.findElement(By.id("regEmail")).sendKeys(email);
-                driver.findElement(By.id("regFirstName")).sendKeys("Test");
-                driver.findElement(By.id("regLastName")).sendKeys("User");
-                driver.findElement(By.id("regPhone")).sendKeys("5551234567");
-
-                WebElement registerButton = wait.until(ExpectedConditions.elementToBeClickable(
-                        By.xpath("//form[@id='registerForm']//button[@type='submit']")));
-                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", registerButton);
-
-                // Kayıt mesajını bekle ve kontrol et
-                WebElement registerMessage = wait
-                        .until(ExpectedConditions.visibilityOfElementLocated(By.id("registerMessage")));
-                System.out.println("Kayıt mesajı: " + registerMessage.getText());
-
-                // API İLE DOĞRULAMA (2. Çözüm)
-                // Frontend UI state'ine (Loading...) güvenmek yerine API'ye soruyoruz.
-                boolean userExists = false;
-                for (int apiRetry = 0; apiRetry < 10; apiRetry++) {
-                    try {
-                        URL url = new URL("http://localhost:8081/api/auth/login");
-                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                        conn.setRequestMethod("POST");
-                        conn.setRequestProperty("Content-Type", "application/json");
-                        conn.setDoOutput(true);
-
-                        String jsonInputString = String.format("{\"username\": \"%s\", \"password\": \"%s\"}", username,
-                                password);
-
-                        try (java.io.OutputStream os = conn.getOutputStream()) {
-                            byte[] input = jsonInputString.getBytes("utf-8");
-                            os.write(input, 0, input.length);
-                        }
-
-                        int code = conn.getResponseCode();
-                        // 200 (OK) -> Login başarılı (User var)
-                        // 403 (Forbidden) -> Şifre yanlış ama User var (Spring Security bazen böyle
-                        // döner)
-                        // 401 (Unauthorized) -> Login başarısız
-                        if (code == 200 || code == 403) {
-                            userExists = true;
-                            System.out.println("✓ API Doğrulama Başarılı: User backend'de mevcut (HTTP " + code + ")");
-                            break;
-                        } else {
-                            System.out.println("⏳ API Bekleniyor (HTTP " + code + ")...");
-                        }
-                    } catch (Exception ignored) {
-                        System.out.println("⏳ API Bağlantı hatası...");
-                    }
-
-                    Thread.sleep(2000);
-                }
-
-                if (userExists) {
-                    System.out.println("✓ Kayıt işlemi backend tarafından doğrulandı: " + username);
-                    registrationSuccess = true;
-                    break;
-                } else {
-                    System.out.println("⚠ Kayıt başarısız: Backend user'ı bulamadı (Deneme " + (i + 1) + ")");
-                }
-
-            } catch (Exception e) {
-                System.out.println("⚠ Kayıt hatası (Deneme " + (i + 1) + "): " + e.getMessage());
-            }
-        }
-
-        if (!registrationSuccess) {
-            throw new RuntimeException("Kayıt işlemi 3 denemede de başarısız oldu.");
-        }
-
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-        }
-
-        // ========== LOGİN ==========
-        try {
-            WebElement loginTab = driver.findElement(By.xpath("//button[contains(text(), 'Giriş Yap')]"));
-            if (loginTab.isDisplayed()) {
-                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", loginTab);
-                Thread.sleep(1000);
-            }
-        } catch (Exception e) {
-            System.out.println("Login sekmesi zaten aktif");
-        }
-
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("loginUsername")));
-        driver.findElement(By.id("loginUsername")).clear();
-        driver.findElement(By.id("loginUsername")).sendKeys(username);
-        driver.findElement(By.id("loginPassword")).clear();
-        driver.findElement(By.id("loginPassword")).sendKeys(password);
-
-        System.out.println("✓ Login formu dolduruldu: " + username);
-
-        WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//form[@id='loginForm']//button[@type='submit']")));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", loginButton);
-
-        System.out.println("✓ Login butonuna tıklandı, dashboard bekleniyor...");
-
-        // Dashboard için UZUN bekleme (60 saniye)
-        WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(60));
-
-        try {
-            // Önce presence, sonra visibility
-            longWait.until(ExpectedConditions.presenceOfElementLocated(By.id("dashboard-section")));
-            WebElement dashboard = longWait
-                    .until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard-section")));
-
-            System.out.println("✓ Dashboard yüklendi!");
-
-        } catch (org.openqa.selenium.TimeoutException e) {
-            // Dashboard görünmedi, login mesajını kontrol et
-            System.err.println("❌ Dashboard 60 saniyede görünmedi!");
-
-            try {
-                WebElement loginMsg = driver.findElement(By.id("loginMessage"));
-                String loginMsgText = loginMsg.getText().trim();
-                System.err.println("Login mesajı: [" + loginMsgText + "]");
-            } catch (Exception ex) {
-                System.err.println("Login mesajı okunamadı");
-            }
-
-            // Sayfa kaynağını logla (debug için)
-            String pageSource = driver.getPageSource();
-            if (pageSource.contains("dashboard-section")) {
-                System.err.println("⚠ Dashboard elementi sayfada VAR ama görünür DEĞİL (CSS problemi olabilir)");
-            } else {
-                System.err.println("⚠ Dashboard elementi sayfada YOK (login başarısız)");
-            }
-
-            throw new RuntimeException("Dashboard yüklenemedi - Login başarısız olabilir", e);
-        }
-
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-        }
+        // Helper metodları kullan
+        String registeredUsername = registerUser(username, password, email, "Test", "User", "5551234567");
+        loginUser(registeredUsername, password);
 
         // ========== HESAP OLUŞTURMA ==========
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
+
         WebElement accountTypeSelect = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("accountType")));
         Select accountSelect = new Select(accountTypeSelect);
 

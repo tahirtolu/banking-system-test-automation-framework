@@ -148,38 +148,38 @@ public class BaseSeleniumTest {
     }
 
     /**
-     * Robust User Registration with Retry Logic
-     * Handles transient JPA/DB locking errors by retrying up to 3 times.
+     * Robust User Registration with Retry Logic & API Verification
+     * Handles transient JPA/DB locking errors and flaky UI by verifying via API.
      * 
-     * @return The actual username used for registration (may differ from input if
-     *         retried)
+     * @return The actual username used for registration
      */
     protected String registerUser(String username, String password, String email, String firstName, String lastName,
             String phone) {
-        driver.get(FRONTEND_URL);
 
-        int maxRetries = 10; // Arttırıldı: 3 -> 10
-        boolean success = false;
+        int maxRetries = 10;
         String registeredUsername = username;
 
         for (int i = 0; i < maxRetries; i++) {
+            System.out.println("=== Kayıt Denemesi " + (i + 1) + "/" + maxRetries + " ===");
             try {
-                // ... (existing helper logic) ...
+                driver.get(FRONTEND_URL); // Her denemede sayfayı yenile
 
-                // Kayıt sekmesine geç (eğer zaten orada değilsek)
+                // Kayıt sekmesine geç
                 try {
-                    WebElement registerTab = wait
-                            .until(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
+                    WebElement registerTab = wait.until(org.openqa.selenium.support.ui.ExpectedConditions
+                            .elementToBeClickable(
                                     org.openqa.selenium.By.xpath("//button[contains(text(), 'Kayıt Ol')]")));
-                    registerTab.click();
+                    ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();",
+                            registerTab);
                 } catch (Exception e) {
-                    // Belki zaten kayıt sayfasındayız
+                    // Zaten oradaysak devam
                 }
 
                 wait.until(org.openqa.selenium.support.ui.ExpectedConditions
                         .presenceOfElementLocated(org.openqa.selenium.By.id("regUsername")));
 
                 String currentUsername = username + (i > 0 ? "_" + i : "");
+                String currentEmail = (i > 0 ? i : "") + email;
 
                 // Formu doldur
                 driver.findElement(org.openqa.selenium.By.id("regUsername")).clear();
@@ -187,7 +187,7 @@ public class BaseSeleniumTest {
                 driver.findElement(org.openqa.selenium.By.id("regPassword")).clear();
                 driver.findElement(org.openqa.selenium.By.id("regPassword")).sendKeys(password);
                 driver.findElement(org.openqa.selenium.By.id("regEmail")).clear();
-                driver.findElement(org.openqa.selenium.By.id("regEmail")).sendKeys(email + (i > 0 ? i : ""));
+                driver.findElement(org.openqa.selenium.By.id("regEmail")).sendKeys(currentEmail);
                 driver.findElement(org.openqa.selenium.By.id("regFirstName")).clear();
                 driver.findElement(org.openqa.selenium.By.id("regFirstName")).sendKeys(firstName);
                 driver.findElement(org.openqa.selenium.By.id("regLastName")).clear();
@@ -201,76 +201,63 @@ public class BaseSeleniumTest {
                 ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();",
                         registerButton);
 
-                // Sonuç kontrolü (Daha esnek timeout)
-                // DB hatası hemen gelmeyebilir, biraz bekleyelim
-                WebElement message = null;
+                // UI Mesajını bekle (Log için) ama ona güvenme
                 try {
-                    message = wait.until(org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated(
-                            org.openqa.selenium.By.id("registerMessage")));
+                    WebElement msg = wait
+                            .until(org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated(
+                                    org.openqa.selenium.By.id("registerMessage")));
+                    System.out.println("UI Mesajı: " + msg.getText());
                 } catch (Exception e) {
-                    // Mesaj görünmediyse bile belki retry gerekebilir, sonraki koda bırak
                 }
 
-                String msgText = "";
-                if (message != null) {
-                    // Mesajın içeriğini bekle
-                    WebElement finalMessage = message;
+                // --- API Verification (Solution 2) ---
+                boolean userExists = false;
+                for (int apiRetry = 0; apiRetry < 10; apiRetry++) {
                     try {
-                        wait.until(d -> {
-                            String text = finalMessage.getText().trim().toLowerCase();
-                            return !text.isEmpty() && !text.contains("yapılıyor");
-                        });
-                        msgText = finalMessage.getText().trim();
-                    } catch (Exception e) {
-                        // Timeout olursa mevcut text'i al
-                        msgText = finalMessage.getText().trim();
+                        URL url = new URL("http://localhost:8081/api/auth/login");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setDoOutput(true);
+
+                        String jsonInputString = String.format("{\"username\": \"%s\", \"password\": \"%s\"}",
+                                currentUsername, password);
+
+                        try (java.io.OutputStream os = conn.getOutputStream()) {
+                            byte[] input = jsonInputString.getBytes("utf-8");
+                            os.write(input, 0, input.length);
+                        }
+
+                        int code = conn.getResponseCode();
+                        if (code == 200 || code == 403) {
+                            userExists = true;
+                            System.out.println("✓ API Onayı: Kullanıcı backend'de mevcut (HTTP " + code + ")");
+                            break;
+                        }
+                    } catch (Exception ignored) {
                     }
+                    Thread.sleep(1000);
                 }
 
-                String lowerMsg = msgText.toLowerCase();
-
-                if (lowerMsg.contains("başarı") || lowerMsg.contains("success")) {
-                    System.out.println("✓ Kayıt başarılı: " + currentUsername);
-                    success = true;
+                if (userExists) {
+                    System.out.println("✓ Kayıt Başarılı ve Doğrulandı: " + currentUsername);
                     registeredUsername = currentUsername;
                     return registeredUsername;
+                } else {
+                    System.out.println("⚠ API kullanıcıyı bulamadı, tekrar deneyelim...");
+                    throw new RuntimeException("API_VERIFICATION_FAILED");
                 }
 
-                if (lowerMsg.contains("jpa") || lowerMsg.contains("transaction") || lowerMsg.contains("lock")
-                        || lowerMsg.contains("hata") || lowerMsg.contains("error")) {
-                    System.out.println("⚠ DB/Sistem Hatası (Retry " + (i + 1) + "/" + maxRetries + "): " + msgText);
-                    throw new RuntimeException("DB_RETRY");
-                }
-
-                // Mesaj boşsa veya başka bir durumsa da retry yapalım (SQLite bazen kilitli
-                // kalıp cevap dönmeyebiliyor)
-                if (msgText.isEmpty()) {
-                    System.out.println("⚠ Yanıt alınamadı (Retry " + (i + 1) + "/" + maxRetries + ")");
-                    throw new RuntimeException("DB_RETRY");
-                }
-
-                throw new RuntimeException("Kayıt hatası: " + msgText);
-
-            } catch (RuntimeException e) {
-                if ("DB_RETRY".equals(e.getMessage())) {
-                    try {
-                        // Exponential Backoff: 2s, 4s, 8s, 10s...
-                        long waitTime = Math.min((long) Math.pow(2, i + 1) * 1000, 10000);
-                        System.out.println("⏳ Bekleniyor: " + waitTime + "ms");
-                        Thread.sleep(waitTime);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-                    continue;
-                }
-                if (i == maxRetries - 1)
-                    throw e;
             } catch (Exception e) {
-                if (i == maxRetries - 1)
-                    throw new RuntimeException("Registration failed after retries", e);
+                System.out.println("⚠ Hata (Retry " + (i + 1) + "): " + e.getMessage());
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ie) {
+                }
             }
         }
-        throw new RuntimeException("Registration failed");
+
+        throw new RuntimeException("Kayıt işlemi " + maxRetries + " denemede başarısız oldu.");
     }
 
     protected void loginUser(String username, String password) {
